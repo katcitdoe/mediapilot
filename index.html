@@ -72,21 +72,20 @@
   <h1>mediapilot</h1>
   <div class="container">
 
-    <h3>name your list</h3>
-    <input id="listName" placeholder="chocolate apple fudge" />
-
-    <input id="itemInput" placeholder="add any media (movie, show, song, artist...)" />
+    <h3>list setup</h3>
+    <input id="listName" placeholder="christmas movies" />
+    <input id="itemInput" placeholder="add any media (movies, shows, songs, artists...)" />
     <button onclick="addItem()">test</button>
 
-    <h3>Your List:</h3>
+    <h3>list result</h3>
     <ul id="list"></ul>
 
-    <h3>Export List</h3>
-    <button onclick="exportList()">Download JSON</button>
+    <h3>export list</h3>
+    <button onclick="exportList()">download json</button>
 
-    <h3>Import List</h3>
+    <h3>import list</h3>
     <input type="file" id="fileInput" accept="application/json" />
-    <button onclick="importList()">Import JSON</button>
+    <button onclick="importList()">import json</button>
   </div>
 
   <script>
@@ -154,7 +153,7 @@
           mediaList = data.items || [];
           renderList();
         } catch (err) {
-          alert('Invalid JSON file');
+          alert('invalid file');
         }
       };
       reader.readAsText(file);
