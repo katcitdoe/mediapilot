@@ -1,2 +1,2 @@
 # mediapilot
-organize your media (films, shows, songs, artists)
+katcitdoe.github.io/mediapilot/
