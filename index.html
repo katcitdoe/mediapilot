@@ -95,7 +95,11 @@
         li.dataset.index = index;
 
         li.addEventListener('dragstart', () => li.classList.add('dragging'));
-        li.addEventListener('dragend', () => li.classList.remove('dragging'));
+        li.addEventListener('dragend', () => {
+          li.classList.remove('dragging');
+          const newOrder = [...document.querySelectorAll('#list li')].map(li => li.firstChild.textContent);
+          mediaList = newOrder;
+        });
 
         const btn = document.createElement('button');
         btn.textContent = 'X';
