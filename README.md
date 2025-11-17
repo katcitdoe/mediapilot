@@ -1,3 +1,3 @@
 # mediapilot
-basic way to organize your media (films, shows, songs, artists)
-no account, no ads, no bullshit
+basic way to organize your media (films, shows, songs, artists)  
+no accounts, no ads, no bullshit
