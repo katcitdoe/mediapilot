@@ -72,16 +72,15 @@
   <h1>mediapilot</h1>
   <div class="container">
 
-    <h3>list setup</h3>
-    <input id="listName" placeholder="christmas movies" />
+    <input id="listName" placeholder="name your list" />
     <input id="itemInput" placeholder="add any media (movies, shows, songs, artists...)" />
-    <button onclick="addItem()">test</button>
-
-    <h3>list result</h3>
+    <button onclick="addItem()">submit</button>
     
     <ul id="list"></ul>
 
     <button onclick="exportList()">export json</button>
+
+    
     <input type="file" id="fileInput" accept="application/json" />
     <button onclick="importList()">import json</button>
   </div>
