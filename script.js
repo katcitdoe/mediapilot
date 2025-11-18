@@ -2,26 +2,28 @@
 // UNIVERSAL INITIALIZATION AND PAGE CHECK
 // ====================================================================
 
-// Check if we are on the Audio page by looking for an element unique to audio.html.
+// Check if we are on the Audio page by looking for a unique ID.
+// This determines which initialization function to run.
 const isAudioPage = !!document.getElementById('bitrateInput'); 
 
 document.addEventListener('DOMContentLoaded', async () => {
     if (isAudioPage) {
-        // If on audio.html, run the FFmpeg logic.
+        // Run FFmpeg logic for the audio page
+        console.log("Audio Converter: Initializing FFmpeg logic.");
         await initAudioConverter();
     } else {
-        // If on index.html (or any other page), run the Canvas Image logic.
+        // Run Canvas/Blob logic for the image page
+        console.log("Image Converter: Initializing Canvas/Blob logic.");
         initImageConverter();
     }
 });
 
-
 // ====================================================================
-// IMAGE CONVERTER LOGIC (Canvas API) - Runs on index.html
+// IMAGE CONVERTER LOGIC (Canvas API with Blob URL) - Runs on index.html
 // ====================================================================
 
 function initImageConverter() {
-    // Image-specific element references from index.html
+    // 1. Element References
     const fileInput = document.getElementById('fileInput');
     const formatSelect = document.getElementById('formatSelect');
     const convertButton = document.getElementById('convertButton');
@@ -30,10 +32,16 @@ function initImageConverter() {
     const widthInput = document.getElementById('widthInput');
     const heightInput = document.getElementById('heightInput');
 
+    // 2. Initial Status Check
+    statusMessage.innerHTML = '✅ Image Converter Ready.';
+    statusMessage.className = 'status-message success';
+    convertButton.disabled = false;
+    convertButton.textContent = 'Convert File';
+
+    // 3. Event Listener
     convertButton.addEventListener('click', handleImageConversion);
 
     function handleImageConversion() {
-        // 1. Validation
         if (fileInput.files.length === 0) {
             statusMessage.innerHTML = '⚠️ Please select a file first.';
             statusMessage.className = 'status-message error';
@@ -60,10 +68,20 @@ function initImageConverter() {
         statusMessage.className = 'status-message processing';
         convertButton.disabled = true;
         
+        // --- PERFORMANCE FIX: Use ArrayBuffer/Blob URL instead of Data URL ---
         const reader = new FileReader();
         reader.onload = (event) => {
+            // Create a temporary Blob from the ArrayBuffer
+            const arrayBuffer = event.target.result;
+            const blob = new Blob([arrayBuffer], { type: selectedFile.type });
+            const imageUrl = URL.createObjectURL(blob);
+            
             const img = new Image();
+            
             img.onload = () => {
+                // Clean up the temporary URL immediately after loading
+                URL.revokeObjectURL(imageUrl); 
+                
                 try {
                     let newWidth = img.width;
                     let newHeight = img.height;
@@ -117,12 +135,13 @@ function initImageConverter() {
             };
             
             img.onerror = () => {
-                statusMessage.innerHTML = '❌ Error loading the image file. Ensure file is a valid image or SVG.';
+                URL.revokeObjectURL(imageUrl); // Clean up on error too
+                statusMessage.innerHTML = '❌ Error loading the image file.';
                 statusMessage.className = 'status-message error';
                 convertButton.disabled = false;
             };
 
-            reader.readAsDataURL(selectedFile);
+            img.src = imageUrl; // Load the image from the safe Blob URL
         };
 
         reader.onerror = (error) => {
@@ -132,17 +151,18 @@ function initImageConverter() {
             convertButton.disabled = false;
         };
 
-        reader.readAsDataURL(selectedFile);
+        // We read as ArrayBuffer now, which is necessary for Blob URL creation
+        reader.readAsArrayBuffer(selectedFile);
+        // --- END PERFORMANCE FIX ---
     }
 }
-
 
 // ====================================================================
 // AUDIO CONVERTER LOGIC (FFmpeg Wasm) - Runs on audio.html
 // ====================================================================
 
 async function initAudioConverter() {
-    // Audio-specific element references from audio.html
+    // 1. Element References
     const fileInput = document.getElementById('fileInput');
     const formatSelect = document.getElementById('formatSelect');
     const bitrateInput = document.getElementById('bitrateInput');
@@ -151,8 +171,15 @@ async function initAudioConverter() {
     const convertButton = document.getElementById('convertButton');
     const statusMessage = document.getElementById('statusMessage');
 
-    // --- FFmpeg Initialization ---
-    const FFmpegGlobal = FFmpeg;
+    if (!convertButton) {
+        // Safety check in case the FFmpeg script tag is missing entirely
+        console.error("Audio initialization failed: Convert button not found.");
+        return;
+    }
+    
+    // 2. FFmpeg Initialization
+    // Assumes FFmpeg global object is defined by the script tag in audio.html
+    const FFmpegGlobal = FFmpeg; 
     const { createFFmpeg, fetchFile } = FFmpegGlobal;
     
     const ffmpeg = createFFmpeg({ 
@@ -160,7 +187,7 @@ async function initAudioConverter() {
         corePath: 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.7/dist/ffmpeg-core.js' 
     });
 
-    // 1. Load FFmpeg Core
+    // 3. Load FFmpeg Core
     try {
         await ffmpeg.load();
         convertButton.disabled = false;
@@ -168,10 +195,11 @@ async function initAudioConverter() {
         statusMessage.innerHTML = '✅ FFmpeg ready. Select a file.';
         statusMessage.className = 'status-message success';
     } catch (e) {
-        statusMessage.innerHTML = `❌ Failed to load FFmpeg. Check console.`;
+        // This catch block will alert if ffmpeg-core.js fails to load
+        statusMessage.innerHTML = `❌ Failed to load FFmpeg Core. Check console for details.`;
         statusMessage.className = 'status-message error';
         console.error("FFmpeg Load Error:", e);
-        return; // Stop initialization if load fails
+        return; 
     }
     
     // Set up a progress listener
@@ -183,7 +211,7 @@ async function initAudioConverter() {
     });
 
 
-    // 2. Main Conversion Logic
+    // 4. Main Conversion Logic
     convertButton.addEventListener('click', async () => {
         if (fileInput.files.length === 0) {
             statusMessage.innerHTML = '⚠️ Please select an audio file first.';
