@@ -36,17 +36,17 @@
             <div id="controls-grid">
                 
                 <div class="control-col">
-                    <label for="bitrateInput">Bitrate (96 - 320):</label>
-                    <input type="number" id="bitrateInput" placeholder="320" />
+                    <label for="bitrateInput">Bitrate (kbps):</label>
+                    <input type="number" id="bitrateInput" value="320" min="96" max="320" />
                 </div>
 
                 <div class="control-col">
-                    <label for="trimStartInput">Trim Start (seconds):</label>
+                    <label for="trimStartInput">Trim Start (secs):</label>
                     <input type="number" id="trimStartInput" placeholder="Original Start" min="0" />
                 </div>
 
                 <div class="control-col">
-                    <label for="trimEndInput">Trim End (seconds):</label>
+                    <label for="trimEndInput">Trim End (secs):</label>
                     <input type="number" id="trimEndInput" placeholder="Original End" min="0" />
                 </div>
             </div>
