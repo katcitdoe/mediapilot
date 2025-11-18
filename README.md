@@ -1,3 +1,3 @@
 # mediapilot
-CONVERT EDIT ORGANIZE  
-IMAGES AUDIO VIDEOS
+convert & edit all kinds of media  
+no ads, no accounts, no bullshit.
