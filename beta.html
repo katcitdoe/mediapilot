@@ -7,7 +7,7 @@
   <style>
     body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #000; color: #fff; }
     h1 { text-align: center; }
-    .container { max-width: 700px; margin: auto; background: #111; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(255,255,255,0.06); }
+    .container { max-width: 600px; margin: auto; background: #111; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(255,255,255,0.1); }
     input, button, select { width: 100%; padding: 10px; margin: 8px 0; border-radius: 5px; border: 1px solid #444; font-size: 16px; background: #222; color: #fff; }
     button { cursor: pointer; background: #007bff; border: none; }
     button:hover { background: #0056b3; }
@@ -15,15 +15,12 @@
     li { background: #222; padding: 10px; border-radius: 5px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; cursor: grab; }
     li.dragging { opacity: 0.3; }
     .remove { background: #ff4d4d; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
-    #convertStatus { font-size: 14px; color: #ddd; }
-    .small { font-size: 13px; color:#aaa; }
   </style>
-  <!-- ffmpeg.wasm (core will be fetched from CDN) -->
-  <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js""></script>
+  <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/ffmpeg.min.js"></script>
 </head>
 <body>
+  <h1>mediapilot</h1>
   <div class="container">
-    <h1>mediapilot</h1>
 
     <input id="listName" placeholder="name your list (christmas movies)" />
     <input id="itemInput" placeholder="add anything (sarah by tyler the creator)" />
@@ -38,23 +35,24 @@
 
     <hr style="margin:20px 0; border-color:#333;" />
 
-    <h2>Convert Images</h2>
-    <input type="file" id="mediaConvertInput" accept="image/*" />
+    <h2>Convert Media</h2>
+    <input type="file" id="mediaConvertInput" accept="image/*,video/*" />
 
     <label>Convert to format:</label>
     <select id="formatSelect">
-      <option value="jpg">JPG</option>
-      <option value="png">PNG</option>
-      <option value="webp">WEBP</option>
+      <option value="jpg">JPG (image)</option>
+      <option value="png">PNG (image)</option>
+      <option value="webp">WEBP (image)</option>
+      <option value="mp4">MP4 (video)</option>
+      <option value="webm">WEBM (video)</option>
     </select>
 
-    <button onclick="convertMedia()">convert image</button>
+    <button onclick="convertMedia()">convert file</button>
     <p id="convertStatus"></p>
-    <p class="small">Image conversion only. Video conversion removed.</p>Note: image conversions use the browser (fast). Video conversions use ffmpeg.wasm and can be large/slow and may not support all codecs in the browser build.</p>
+
   </div>
 
   <script>
-    // --- list functionality (unchanged) ---
     let mediaList = [];
 
     function renderList() {
@@ -62,19 +60,14 @@
       ul.innerHTML = '';
       mediaList.forEach((item, index) => {
         const li = document.createElement('li');
-        // use a span so we can reliably read textContent even with the remove button
-        const span = document.createElement('span');
-        span.textContent = item;
-        li.appendChild(span);
-
+        li.textContent = item;
         li.draggable = true;
         li.dataset.index = index;
 
         li.addEventListener('dragstart', () => li.classList.add('dragging'));
         li.addEventListener('dragend', () => {
           li.classList.remove('dragging');
-          // update mediaList order from DOM
-          const newOrder = [...document.querySelectorAll('#list li')].map(li => li.querySelector('span').textContent);
+          const newOrder = [...document.querySelectorAll('#list li')].map(li => li.firstChild.textContent);
           mediaList = newOrder;
         });
 
@@ -119,13 +112,11 @@
       reader.readAsText(file);
     }
 
-    // drag reorder
     const ul = document.getElementById('list');
     ul.addEventListener('dragover', e => {
       e.preventDefault();
       const dragging = document.querySelector('.dragging');
       const after = getDragAfter(ul, e.clientY);
-      if (!dragging) return;
       if (after == null) ul.appendChild(dragging); else ul.insertBefore(dragging, after);
     });
 
@@ -139,65 +130,31 @@
       }, { offset: Number.NEGATIVE_INFINITY }).element;
     }
 
-    // --- image-only conversion ---
     async function convertMedia() {
-      const fileInput = document.getElementById('mediaConvertInput');
-      const file = fileInput.files[0];
+      const file = document.getElementById('mediaConvertInput').files[0];
       const format = document.getElementById('formatSelect').value;
       const status = document.getElementById('convertStatus');
 
-      if (!file) { status.textContent = 'Select an image first.'; return; }
-      status.textContent = 'Converting image...';
+      if (!file) { status.textContent = 'Select a file first.'; return; }
 
-      try {
-        const dataUrl = await fileToDataURL(file);
-        const img = await loadImage(dataUrl);
-        const canvas = document.createElement('canvas');
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
+      status.textContent = 'Loading FFmpeg...';
+      const { createFFmpeg, fetchFile } = FFmpeg;
+      const ffmpeg = createFFmpeg({ log: false });
+      await ffmpeg.load();
 
-        const mime = format === 'jpg' ? 'image/jpeg' : (format === 'png' ? 'image/png' : 'image/webp');
-        canvas.toBlob(blob => {
-          const outName = file.name.replace(/\.[^.]+$/, '') + '.' + format;
-          downloadBlob(blob, outName);
-          status.textContent = 'Done — image downloaded.';
-        }, mime, 0.92);
-      } catch (err) {
-        console.error(err);
-        status.textContent = 'Image conversion failed.';
-      }
-    } / target format combination.';
-    }
+      status.textContent = 'Converting...';
+      ffmpeg.FS('writeFile', file.name, await fetchFile(file));
 
-    // helpers
-    function fileToDataURL(file) {
-      return new Promise((res, rej) => {
-        const r = new FileReader();
-        r.onload = () => res(r.result);
-        r.onerror = rej;
-        r.readAsDataURL(file);
-      });
-    }
+      const output = `output.${format}`;
+      await ffmpeg.run('-i', file.name, output);
 
-    function loadImage(dataUrl) {
-      return new Promise((res, rej) => {
-        const img = new Image();
-        img.onload = () => res(img);
-        img.onerror = rej;
-        img.src = dataUrl;
-      });
-    }
-
-    function downloadBlob(blob, name) {
+      const data = ffmpeg.FS('readFile', output);
+      const blob = new Blob([data.buffer]);
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url; a.download = name; a.click(); URL.revokeObjectURL(url);
-    }
+      const a = document.createElement('a'); a.href = url; a.download = output; a.click();
+      URL.revokeObjectURL(url);
 
-    function getFileExtension(name) {
-      const m = name.match(/(\.[^.]+)$/);
-      return m ? m[0] : '';
+      status.textContent = 'Done! Download should start.';
     }
 
   </script>
