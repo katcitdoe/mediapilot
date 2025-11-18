@@ -1,8 +1,10 @@
 // ==========================================
 // SHARED SETUP AND FFmpeg INITIALIZATION
 // ==========================================
-const { createFFmpeg, fetchFile } = FFmpeg;
-const ffmpeg = createFFmpeg({ log: true });
+const ffmpeg = createFFmpeg({ 
+    log: true,
+    corePath: 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.7/dist/ffmpeg-core.js' 
+});
 let ffmpegLoaded = false;
 
 // Shared references
