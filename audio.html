@@ -3,118 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>All-in-One Client-Side Converter</title>
-    <link rel="stylesheet" href="style.css">
+    <title>FFmpeg Client-Side Audio Tool</title>
+    <link rel="stylesheet" href="audio-styles.css"> 
     
     <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.7/dist/ffmpeg.min.js"></script>
 </head>
 <body>
     <div class="page">
         <div class="card">
-            
-            <div class="tab-navigation">
-                <button class="tab-button active" data-tab="image-converter">🖼️ Image Converter</button>
-                <button class="tab-button" data-tab="audio-tool">🎶 Audio Tool</button>
+            <h1>FFmpeg Audio Tool</h1>
+            <p class="description">Convert, compress, and trim audio files client-side using WebAssembly (FFmpeg).</p>
+
+            <div class="row">
+                <div class="col">
+                    <label for="fileInput">Select Audio File (.mp3, .wav, etc.):</label>
+                    <input type="file" id="fileInput" accept="audio/*">
+                </div>
+                
+                <div class="col">
+                    <label for="formatSelect">Convert to Format:</label>
+                    <select id="formatSelect">
+                        <option value="mp3">MP3 (.mp3)</option>
+                        <option value="wav">WAV (.wav)</option>
+                        <option value="ogg">OGG (.ogg)</option>
+                        <option value="flac">FLAC (.flac)</option>
+                    </select>
+                </div>
             </div>
             
-            <hr>
-            
-            <div id="image-converter" class="tab-content active">
-                <h1>Image Converter</h1>
-                <p class="description">Convert, resize, and compress images locally (PNG, JPEG, WebP, GIF, SVG). No files leave your device.</p>
-    
-                <div class="row">
-                    <div class="col">
-                        <label for="fileInputImage">Select Image File:</label>
-                        <input type="file" id="fileInputImage" accept="image/*, .svg, .tiff">
-                    </div>
-                    
-                    <div class="col">
-                        <label for="formatSelectImage">Convert to Format:</label>
-                        <select id="formatSelectImage">
-                            <option value="image/png">PNG (.png)</option>
-                            <option value="image/jpeg">JPEG (.jpg)</option>
-                            <option value="image/webp">WebP (.webp)</option>
-                            <option value="image/gif">GIF (.gif - Single Frame)</option>
-                            <option value="image/avif" disabled>AVIF (.avif - Requires library)</option>
-                            <option value="image/tiff" disabled>TIFF (.tiff - Requires library)</option>
-                        </select>
-                    </div>
-                </div>
+            <label style="margin-top: 0;">Audio Processing Controls</label>
+            <div id="controls-grid">
                 
-                <label style="margin-top: 0;">Conversion Options</label>
-                <div id="controls-grid-image">
-                    <div class="control-col">
-                        <label for="qualityInputImage">Quality (0.1 - 1.0):</label>
-                        <input type="number" id="qualityInputImage" value="0.9" min="0.1" max="1.0" step="0.05" />
-                    </div>
-    
-                    <div class="control-col">
-                        <label for="widthInputImage">Resize Width (px):</label>
-                        <input type="number" id="widthInputImage" placeholder="Original Width" />
-                    </div>
-    
-                    <div class="control-col">
-                        <label for="heightInputImage">Resize Height (px):</label>
-                        <input type="number" id="heightInputImage" placeholder="Original Height" />
-                    </div>
+                <div class="control-col">
+                    <label for="bitrateInput">Compression (Bitrate - kbps):</label>
+                    <input type="number" id="bitrateInput" placeholder="Default (e.g., 128)" />
                 </div>
-                
-                <button id="convertButtonImage">Convert Image</button>
+
+                <div class="control-col">
+                    <label for="trimStartInput">Trim Start (seconds, e.g., 5):</label>
+                    <input type="number" id="trimStartInput" placeholder="0" min="0" />
+                </div>
+
+                <div class="control-col">
+                    <label for="trimEndInput">Trim End (seconds, e.g., 30):</label>
+                    <input type="number" id="trimEndInput" placeholder="End" min="0" />
+                </div>
             </div>
-
-
-            <div id="audio-tool" class="tab-content hidden">
-                <h1>Audio Tool</h1>
-                <p class="description">Convert, compress, and trim audio files client-side using WebAssembly (FFmpeg).</p>
-                
-                <div class="row">
-                    <div class="col">
-                        <label for="fileInputAudio">Select Audio File (.mp3, .wav, etc.):</label>
-                        <input type="file" id="fileInputAudio" accept="audio/*">
-                    </div>
-                    
-                    <div class="col">
-                        <label for="formatSelectAudio">Convert to Format:</label>
-                        <select id="formatSelectAudio">
-                            <option value="mp3">MP3 (.mp3)</option>
-                            <option value="wav">WAV (.wav)</option>
-                            <option value="ogg">OGG (.ogg)</option>
-                            <option value="flac">FLAC (.flac)</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <label style="margin-top: 0;">Audio Processing Controls</label>
-                <div id="controls-grid-audio">
-                    <div class="control-col">
-                        <label for="bitrateInputAudio">Compression (Bitrate - kbps):</label>
-                        <input type="number" id="bitrateInputAudio" placeholder="Default (e.g., 128)" />
-                    </div>
-    
-                    <div class="control-col">
-                        <label for="trimStartInputAudio">Trim Start (seconds, e.g., 5):</label>
-                        <input type="number" id="trimStartInputAudio" placeholder="0" min="0" />
-                    </div>
-    
-                    <div class="control-col">
-                        <label for="trimEndInputAudio">Trim End (seconds, e.g., 30):</label>
-                        <input type="number" id="trimEndInputAudio" placeholder="End" min="0" />
-                    </div>
-                </div>
-                
-                <button id="convertButtonAudio" disabled>Loading FFmpeg...</button>
-            </div>
-
-
-            <div id="statusMessage" class="status-message">Ready to start.</div>
             
+
+            <button id="convertButton" disabled>Loading FFmpeg...</button>
+
+            <div id="statusMessage" class="status-message">FFmpeg is loading... please wait.</div>
+
             <div class="footer">
-                Developed as a client-side utility.
+                Developed using ffmpeg.wasm for client-side processing.
             </div>
         </div>
     </div>
     
-    <script src="script.js"></script>
+    <script src="audio-script.js"></script>
 </body>
 </html>
