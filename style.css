@@ -5,7 +5,7 @@
     --muted: #9aa0a6;
     --accent: #4CAF50; /* Changed from #1e90ff to match previous green accent */
     --border: #222;
-
+    --text: #fff;
     --error: #ff4d4d;
 }
 
