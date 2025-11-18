@@ -1,10 +1,16 @@
-// ==========================================
-// SHARED SETUP AND FFmpeg INITIALIZATION
-// ==========================================
-const ffmpeg = createFFmpeg({ 
+// --- NEW, SIMPLER INITIALIZATION ---
+
+// 1. Just declare FFmpeg globally. The script tag makes it available.
+const FFmpegGlobal = FFmpeg; 
+
+// 2. Access the required functions directly from the global object when creating the instance.
+const ffmpeg = FFmpegGlobal.createFFmpeg({ 
     log: true,
     corePath: 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.7/dist/ffmpeg-core.js' 
 });
+
+// We'll update fetchFile access inside the conversion function later if needed, 
+// but for now, this fixes the createFFmpeg error.
 let ffmpegLoaded = false;
 
 // Shared references
