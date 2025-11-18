@@ -18,8 +18,8 @@
     .col { flex: 1; }
     .remove { background: #ff4d4d; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
   </style>
-  <!-- load the UMD build that exposes window.FFmpeg -->
-  <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.6/dist/umd/ffmpeg.js"></script>
+  <!-- load the UMD build that exposes window.FFmpeg || window.ffmpeg -->
+  <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/umd/ffmpeg.js"></script>
 </head>
 <body>
   <div class="container">
@@ -187,14 +187,14 @@
     // If already initialized, nothing to do
     if (ffmpeg) return;
 
-    // If window.FFmpeg is not yet available, wait briefly for it to load
+    // If window.FFmpeg || window.ffmpeg is not yet available, wait briefly for it to load
     for (let i = 0; i < 50; i++) {
-      if (window.FFmpeg) break;
+      if (window.FFmpeg || window.ffmpeg) break;
       await wait(100);
     }
 
     // If still not available, attempt to dynamically load the UMD script
-    if (!window.FFmpeg) {
+    if (!window.FFmpeg || window.ffmpeg) {
       const s = document.createElement('script');
       s.src = 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.6/dist/umd/ffmpeg.js';
       document.head.appendChild(s);
@@ -202,7 +202,7 @@
     }
 
     // destructure helpers and create ffmpeg instance
-    ({ createFFmpeg: createFFmpegFn, fetchFile: fetchFileFn } = window.FFmpeg);
+    ({ createFFmpeg: createFFmpegFn, fetchFile: fetchFileFn } = window.FFmpeg || window.ffmpeg);
     ffmpeg = createFFmpegFn({ log: true, corePath: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.2/dist/ffmpeg-core.js' });
   }
 
