@@ -7,23 +7,25 @@
   <style>
     body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #000; color: #fff; }
     h1 { text-align: center; }
-    .container { max-width: 600px; margin: auto; background: #111; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(255,255,255,0.1); }
-    input, button, select { width: 100%; padding: 10px; margin: 8px 0; border-radius: 5px; border: 1px solid #444; font-size: 16px; background: #222; color: #fff; }
+    .container { max-width: 750px; margin: auto; background: #111; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(255,255,255,0.06); }
+    input, button, select, progress { width: 100%; padding: 10px; margin: 8px 0; border-radius: 5px; border: 1px solid #444; font-size: 16px; background: #222; color: #fff; }
     button { cursor: pointer; background: #007bff; border: none; }
     button:hover { background: #0056b3; }
     ul { padding-left: 0; list-style: none; }
     li { background: #222; padding: 10px; border-radius: 5px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; cursor: grab; }
     li.dragging { opacity: 0.3; }
+    .row { display: flex; gap: 10px; }
+    .col { flex: 1; }
     .remove { background: #ff4d4d; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
   </style>
-  <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/ffmpeg.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.6/dist/ffmpeg.min.js"></script>
 </head>
 <body>
-  <h1>mediapilot</h1>
   <div class="container">
+    <h1>mediapilot</h1>
 
-    <input id="listName" placeholder="name your list (christmas movies)" />
-    <input id="itemInput" placeholder="add anything (sarah by tyler the creator)" />
+    <input id="listName" placeholder="name your list" />
+    <input id="itemInput" placeholder="add anything" />
     <button onclick="addItem()">submit</button>
 
     <ul id="list"></ul>
@@ -36,127 +38,271 @@
     <hr style="margin:20px 0; border-color:#333;" />
 
     <h2>Convert Media</h2>
-    <input type="file" id="mediaConvertInput" accept="image/*,video/*" />
+    <input type="file" id="mediaConvertInput" />
 
-    <label>Convert to format:</label>
     <select id="formatSelect">
-      <option value="jpg">JPG (image)</option>
-      <option value="png">PNG (image)</option>
-      <option value="webp">WEBP (image)</option>
-      <option value="mp4">MP4 (video)</option>
-      <option value="webm">WEBM (video)</option>
+      <option value="mp4">Video: MP4</option>
+      <option value="webm">Video: WEBM</option>
+      <option value="gif">GIF</option>
+      <option value="png">Image: PNG</option>
+      <option value="mp3">Audio: MP3</option>
+      <option value="wav">Audio: WAV</option>
+      <option value="video_from_image">Image → Video (MP4)</option>
+      <option value="audio_only">Video → Audio (MP3)</option>
+      <option value="music_video">Music Video: Audio + Image → MP4</option>
+      <option value="trim">Trim Video</option>
     </select>
 
-    <button onclick="convertMedia()">convert file</button>
-    <p id="convertStatus"></p>
+    <div id="trimControls" style="display:none;">
+      <div class="row">
+        <input class="col" id="trimStart" placeholder="start time (sec)" />
+        <input class="col" id="trimEnd" placeholder="end time (sec)" />
+      </div>
+    </div>
 
+    <div id="musicVideoControls" style="display:none;">
+      <input type="file" id="mvImage" accept="image/*" />
+      <input type="file" id="mvAudio" accept="audio/*" />
+    </div>
+
+    <button onclick="convertMedia()">convert</button>
+    <progress id="progressBar" max="100" value="0"></progress>
+    <pre id="convertStatus" style="white-space:pre-wrap"></pre>
   </div>
 
-  <script>
-    let mediaList = [];
+<script>
+  /* ==============================
+       LIST MANAGEMENT
+  ============================== */
+  let mediaList = [];
 
-    function renderList() {
-      const ul = document.getElementById('list');
-      ul.innerHTML = '';
-      mediaList.forEach((item, index) => {
-        const li = document.createElement('li');
-        li.textContent = item;
-        li.draggable = true;
-        li.dataset.index = index;
+  function renderList() {
+    const ul = document.getElementById('list');
+    ul.innerHTML = '';
+    mediaList.forEach((item, index) => {
+      const li = document.createElement('li');
+      const span = document.createElement('span');
+      span.textContent = item;
+      li.appendChild(span);
 
-        li.addEventListener('dragstart', () => li.classList.add('dragging'));
-        li.addEventListener('dragend', () => {
-          li.classList.remove('dragging');
-          const newOrder = [...document.querySelectorAll('#list li')].map(li => li.firstChild.textContent);
-          mediaList = newOrder;
-        });
+      li.draggable = true;
+      li.dataset.index = index;
 
-        const btn = document.createElement('button');
-        btn.textContent = 'X';
-        btn.className = 'remove';
-        btn.onclick = () => removeItem(index);
-
-        li.appendChild(btn);
-        ul.appendChild(li);
+      li.addEventListener('dragstart', () => li.classList.add('dragging'));
+      li.addEventListener('dragend', () => {
+        li.classList.remove('dragging');
+        const newOrder = [...document.querySelectorAll('#list li')].map(li => li.querySelector('span').textContent);
+        mediaList = newOrder;
       });
-    }
 
-    function addItem() {
-      const input = document.getElementById('itemInput');
-      if (input.value.trim() !== '') {
-        mediaList.push(input.value.trim());
-        input.value = '';
-        renderList();
-      }
-    }
+      const btn = document.createElement('button');
+      btn.textContent = 'X';
+      btn.className = 'remove';
+      btn.onclick = () => removeItem(index);
 
-    function removeItem(index) {
-      mediaList.splice(index, 1);
+      li.appendChild(btn);
+      ul.appendChild(li);
+    });
+  }
+
+  function addItem() {
+    const input = document.getElementById('itemInput');
+    if (input.value.trim() !== '') {
+      mediaList.push(input.value.trim());
+      input.value = '';
       renderList();
     }
+  }
 
-    function exportList() {
-      const data = { name: document.getElementById('listName').value, items: mediaList };
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url; a.download = 'media-list.json'; a.click(); URL.revokeObjectURL(url);
+  function removeItem(index) {
+    mediaList.splice(index, 1);
+    renderList();
+  }
+
+  function exportList() {
+    const data = { name: document.getElementById('listName').value, items: mediaList };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'media-list.json'; a.click(); URL.revokeObjectURL(url);
+  }
+
+  function importList() {
+    const file = document.getElementById('fileInput').files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      try { const data = JSON.parse(e.target.result); document.getElementById('listName').value = data.name||''; mediaList = data.items||[]; renderList(); }
+      catch { alert('Invalid JSON file'); }
+    };
+    reader.readAsText(file);
+  }
+
+  const ul = document.getElementById('list');
+  ul.addEventListener('dragover', e => {
+    e.preventDefault();
+    const dragging = document.querySelector('.dragging');
+    const after = getDragAfter(ul, e.clientY);
+    if (!dragging) return;
+    if (after == null) ul.appendChild(dragging); else ul.insertBefore(dragging, after);
+  });
+
+  function getDragAfter(container, y) {
+    const items = [...container.querySelectorAll('li:not(.dragging)')];
+    return items.reduce((closest, child) => {
+      const box = child.getBoundingClientRect();
+      const offset = y - box.top - box.height/2;
+      if (offset < 0 && offset > closest.offset) return { offset, element: child };
+      return closest;
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
+  }
+
+
+  /* ==============================
+      UI BEHAVIOR
+  ============================== */
+  document.getElementById('formatSelect').addEventListener('change', () => {
+    const val = document.getElementById('formatSelect').value;
+    document.getElementById('trimControls').style.display = 'none';
+    document.getElementById('musicVideoControls').style.display = 'none';
+
+    if (val === 'trim') {
+      document.getElementById('trimControls').style.display = 'block';
     }
 
-    function importList() {
-      const file = document.getElementById('fileInput').files[0]; if (!file) return;
-      const reader = new FileReader();
-      reader.onload = e => {
-        try { const data = JSON.parse(e.target.result); document.getElementById('listName').value = data.name||''; mediaList = data.items||[]; renderList(); }
-        catch { alert('Invalid JSON file'); }
-      };
-      reader.readAsText(file);
+    if (val === 'music_video') {
+      document.getElementById('musicVideoControls').style.display = 'block';
+    }
+  });
+
+
+  /* ==============================
+      FFMPEG WITH PROGRESS + NEW MODES
+  ============================== */
+  const { createFFmpeg, fetchFile } = FFmpeg;
+  const ffmpeg = createFFmpeg({
+    log: true,
+    corePath: "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.2/dist/ffmpeg-core.js"
+  });
+
+  async function convertMedia() {
+    const status = document.getElementById('convertStatus');
+    const bar = document.getElementById('progressBar');
+    const file = document.getElementById('mediaConvertInput').files[0];
+    const format = document.getElementById('formatSelect').value;
+
+    if (!file && format !== 'music_video') {
+      status.textContent = "No file selected.";
+      return;
     }
 
-    const ul = document.getElementById('list');
-    ul.addEventListener('dragover', e => {
-      e.preventDefault();
-      const dragging = document.querySelector('.dragging');
-      const after = getDragAfter(ul, e.clientY);
-      if (after == null) ul.appendChild(dragging); else ul.insertBefore(dragging, after);
+    bar.value = 0;
+    status.textContent = "Loading ffmpeg...";
+
+    ffmpeg.setProgress(({ ratio }) => {
+      bar.value = Math.floor(ratio * 100);
     });
 
-    function getDragAfter(container, y) {
-      const items = [...container.querySelectorAll('li:not(.dragging)')];
-      return items.reduce((closest, child) => {
-        const box = child.getBoundingClientRect();
-        const offset = y - box.top - box.height/2;
-        if (offset < 0 && offset > closest.offset) return { offset, element: child };
-        return closest;
-      }, { offset: Number.NEGATIVE_INFINITY }).element;
-    }
+    await ffmpeg.load();
 
-    async function convertMedia() {
-      const file = document.getElementById('mediaConvertInput').files[0];
-      const format = document.getElementById('formatSelect').value;
-      const status = document.getElementById('convertStatus');
+    status.textContent = "Preparing...";
 
-      if (!file) { status.textContent = 'Select a file first.'; return; }
-
-      status.textContent = 'Loading FFmpeg...';
-      const { createFFmpeg, fetchFile } = FFmpeg;
-      const ffmpeg = createFFmpeg({ log: false });
-      await ffmpeg.load();
-
-      status.textContent = 'Converting...';
+    // Write the main file if needed
+    if (file) {
       ffmpeg.FS('writeFile', file.name, await fetchFile(file));
-
-      const output = `output.${format}`;
-      await ffmpeg.run('-i', file.name, output);
-
-      const data = ffmpeg.FS('readFile', output);
-      const blob = new Blob([data.buffer]);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url; a.download = output; a.click();
-      URL.revokeObjectURL(url);
-
-      status.textContent = 'Done! Download should start.';
     }
 
-  </script>
+    let out = "output." + (format === 'music_video' ? 'mp4' : format);
+
+    /* ===============================
+        TRIM VIDEO
+    =============================== */
+    if (format === 'trim') {
+      const start = document.getElementById('trimStart').value || '0';
+      const end = document.getElementById('trimEnd').value || null;
+      out = 'trimmed.mp4';
+
+      const args = ['-i', file.name, '-ss', String(start)];
+      if (end) args.push('-to', String(end));
+      args.push('-c', 'copy', out);
+      await ffmpeg.run(...args);
+    }
+
+    /* ===============================
+        MUSIC VIDEO (IMAGE + AUDIO)
+    =============================== */
+    else if (format === 'music_video') {
+      const mvImg = document.getElementById('mvImage').files[0];
+      const mvAud = document.getElementById('mvAudio').files[0];
+
+      if (!mvImg || !mvAud) {
+        status.textContent = "Select both an image and audio file.";
+        return;
+      }
+
+      status.textContent = 'Writing files...';
+      ffmpeg.FS('writeFile', mvImg.name, await fetchFile(mvImg));
+      ffmpeg.FS('writeFile', mvAud.name, await fetchFile(mvAud));
+
+      out = 'musicvideo.mp4';
+
+      // create a video from the still image and mux audio, using -shortest so it ends with the audio
+      await ffmpeg.run(
+        '-loop', '1',
+        '-i', mvImg.name,
+        '-i', mvAud.name,
+        '-c:v', 'libx264',
+        '-tune', 'stillimage',
+        '-c:a', 'aac',
+        '-b:a', '192k',
+        '-pix_fmt', 'yuv420p',
+        '-shortest',
+        out
+      );
+    }
+
+    /* ===============================
+        VIDEO → AUDIO
+    =============================== */
+    else if (format === 'audio_only') {
+      out = "output.mp3";
+      await ffmpeg.run('-i', file.name, '-vn', '-acodec', 'mp3', out);
+    }
+
+    /* ===============================
+        IMAGE → VIDEO
+    =============================== */
+    else if (format === 'video_from_image') {
+      out = "output.mp4";
+      await ffmpeg.run(
+        '-loop', '1',
+        '-i', file.name,
+        '-t', '5',
+        '-vf', 'format=yuv420p',
+        out
+      );
+    }
+
+    /* ===============================
+        STANDARD FORMAT CONVERSIONS
+    =============================== */
+    else {
+      await ffmpeg.run('-i', file.name, out);
+    }
+
+    /* ===============================
+        EXPORT RESULT
+    =============================== */
+    const data = ffmpeg.FS('readFile', out);
+    const blob = new Blob([data.buffer]);
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = out;
+    a.click();
+
+    status.textContent = "Done!";
+    bar.value = 100;
+  }
+</script>
 </body>
 </html>
