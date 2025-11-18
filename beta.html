@@ -1,191 +1,33 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>mediapilot — beta</title>
-  <style>
-    :root{--bg:#000;--panel:#0f0f10;--muted:#9aa0a6;--accent:#1e90ff}
-    html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial; background:var(--bg); color:#fff}
-    .page{min-height:100%;display:flex;align-items:flex-start;justify-content:center;padding:28px}
-    .card{width:900px;max-width:96%;background:linear-gradient(180deg,#0b0b0b, #141414);border-radius:12px;padding:20px;box-shadow:0 6px 30px rgba(0,0,0,0.6)}
-    h1{margin:0 0 12px;font-weight:600;text-align:center}
-    .row{display:flex;gap:12px}
-    .col{flex:1}
-    input,select,button,progress{background:#111;border:1px solid #222;color:#fff;padding:10px;border-radius:8px;font-size:14px}
-    input::placeholder{color:#666}
-    button{cursor:pointer}
-    .small{font-size:13px;color:var(--muted)}
-    ul{list-style:none;padding:0;margin:8px 0 16px}
-    li{display:flex;align-items:center;justify-content:space-between;background:#111;padding:8px 10px;border-radius:8px;margin-bottom:8px;cursor:grab}
-    .remove{background:#ff4d4d;border:none;color:#fff;padding:6px 8px;border-radius:6px}
-    hr{border:none;border-top:1px solid #151515;margin:16px 0}
-    label{font-size:13px;color:var(--muted);display:block;margin-top:6px}
-    .controls{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    pre{background:#080808;padding:10px;border-radius:8px;max-height:180px;overflow:auto}
-    .muted{color:#999}
-    .footer{margin-top:12px;text-align:center;color:#888;font-size:13px}
-  </style>
-  <!-- Load the UMD build of ffmpeg.wasm (UMD exposes window.FFmpeg or window.ffmpeg). Using jsDelivr for CORS-safe core. -->
-  <script type="module" src="./ffmpeg-loader.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Basic File Converter</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="page">
-    <div class="card">
-      <h1>mediapilot — beta</h1>
+    <div class="converter-container">
+        <h1>Simple File Converter</h1>
+        <p>Select a file and choose your desired output format.</p>
 
-      <!-- LIST UI -->
-      <div style="margin-bottom:14px">
-        <label class="small">List name</label>
-        <input id="listName" placeholder="e.g. holiday movies" />
-        <label class="small">Add item</label>
-        <div class="row">
-          <input id="itemInput" placeholder="type movie, song, artist..." />
-          <button onclick="addItem()">Add</button>
-        </div>
-        <ul id="list"></ul>
-        <div class="row">
-          <button onclick="exportList()">Export JSON</button>
-          <button onclick="document.getElementById('fileInput').click()">Import JSON</button>
-          <input id="fileInput" type="file" accept="application/json" style="display:none" onchange="importList()" />
-        </div>
-      </div>
-
-      <hr />
-
-      <!-- CONVERT UI -->
-      <div>
-        <h2 style="margin-top:0">Convert Media</h2>
-        <label class="small">Primary file (video/image/audio) — for music-video choose image+audio below</label>
-        <input id="mediaConvertInput" type="file" />
-
-        <label class="small">Action</label>
+        <input type="file" id="fileInput" accept="*/*">
+        
+        <label for="formatSelect">Convert to:</label>
         <select id="formatSelect">
-          <option value="mp4">Convert → MP4</option>
-          <option value="webm">Convert → WEBM</option>
-          <option value="gif">Convert → GIF</option>
-          <option value="mp3">Convert → MP3 (audio)</option>
-          <option value="wav">Convert → WAV (audio)</option>
-          <option value="video_from_image">Image → 5s MP4</option>
-          <option value="audio_only">Video → MP3 (audio only)</option>
-          <option value="trim">Trim video</option>
-          <option value="music_video">Music video (image + audio → MP4)</option>
+            <option value="pdf">PDF (.pdf)</option>
+            <option value="jpg">JPEG (.jpg)</option>
+            <option value="png">PNG (.png)</option>
+            <option value="zip">ZIP (.zip)</option>
+            <option value="mp4">MP4 (.mp4)</option>
+            <option value="txt">Text (.txt)</option>
         </select>
 
-        <div id="trimControls" style="display:none">
-          <div class="row">
-            <input id="trimStart" placeholder="start (sec)" />
-            <input id="trimEnd" placeholder="end (sec)" />
-          </div>
-        </div>
+        <button id="convertButton">Convert File</button>
 
-        <div id="musicVideoControls" style="display:none">
-          <label class="small">Music video image</label>
-          <input id="mvImage" type="file" accept="image/*" />
-          <label class="small">Music video audio</label>
-          <input id="mvAudio" type="file" accept="audio/*" />
-        </div>
-
-        <div class="row" style="margin-top:10px">
-          <button onclick="convertMedia()">Start</button>
-          <button onclick="cancelOperation()">Cancel</button>
-        </div>
-
-        <label class="small">Progress</label>
-        <progress id="progressBar" max="100" value="0"></progress>
-        <pre id="convertStatus">Status: idle</pre>
-        <div class="footer">Tip: Video conversions in the browser can be slow and resource-heavy. Use short clips for best results.</div>
-      </div>
+        <div id="statusMessage" class="status-message"></div>
     </div>
-  </div>
 
-<script type="module">
-/* -----------------------------
-   FFmpeg ESM initialization
-------------------------------*/
-import { createFFmpeg, fetchFile } from './ffmpeg-loader.js';
-let ffmpeg = null;
-let abortFlag = false;
-function wait(ms){ return new Promise(r=>setTimeout(r,ms)); }
-
-async function ensureFFmpegReady(){
-  if(ffmpeg) return;
-  ffmpeg = createFFmpeg({ log: false });
-  await ffmpeg.load();
-}
-
-function cancelOperation(){ abortFlag = true; }
-
-function downloadResult(data, name){ const blob=new Blob([data.buffer]); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=name; a.click(); URL.revokeObjectURL(url); }
-
-/* UI and modes will continue here */
-(){ abortFlag = true; }
-
-/* -----------------------------
-   Main convert logic with modes
-------------------------------*/
-async function convertMedia(){
-  abortFlag=false;
-  const status=document.getElementById('convertStatus'); const bar=document.getElementById('progressBar');
-  const input=document.getElementById('mediaConvertInput'); const file=input.files[0];
-  const mode=document.getElementById('formatSelect').value;
-
-  // music_video mode uses separate inputs
-  if(mode!=='music_video' && !file){ status.textContent='No file selected'; return; }
-
-  status.textContent='Initializing ffmpeg...'; bar.value=0;
-  try{ await ensureFFmpegReady(); }catch(err){ console.error('ffmpeg load error',err); status.textContent='Failed to load ffmpeg - see console'; return; }
-
-  ffmpeg.setProgress(({ratio})=>{ bar.value=Math.min(99, Math.floor(ratio*100)); status.textContent=`Converting: ${Math.floor(ratio*100)}%`; });
-
-  // write files
-  try{
-    if(mode==='music_video'){
-      const mvImg=document.getElementById('mvImage').files[0]; const mvAud=document.getElementById('mvAudio').files[0];
-      if(!mvImg||!mvAud){ status.textContent='Select image and audio for music video'; return; }
-      status.textContent='Writing files...';
-      ffmpeg.FS('writeFile', mvImg.name, await fetchFileFn(mvImg)); ffmpeg.FS('writeFile', mvAud.name, await fetchFileFn(mvAud));
-      const out='musicvideo.mp4';
-      // -shortest ensure video length equals audio length
-      await ffmpeg.run('-loop','1','-i',mvImg.name,'-i',mvAud.name,'-c:v','libx264','-tune','stillimage','-c:a','aac','-b:a','192k','-pix_fmt','yuv420p','-shortest',out);
-      const data=ffmpeg.FS('readFile',out); downloadResult(data, out); status.textContent='Done'; bar.value=100; return;
-    }
-
-    // normal modes use single file
-    await ffmpeg.FS('writeFile', file.name, await fetchFileFn(file));
-
-    // trim
-    if(mode==='trim'){
-      const start=document.getElementById('trimStart').value||'0'; const end=document.getElementById('trimEnd').value||null; const out='trimmed.mp4';
-      const args=['-i',file.name,'-ss',String(start)]; if(end) args.push('-to',String(end)); args.push('-c','copy',out);
-      await ffmpeg.run(...args);
-      const data=ffmpeg.FS('readFile',out); downloadResult(data,out); status.textContent='Done'; bar.value=100; return;
-    }
-
-    // image -> short video
-    if(mode==='video_from_image'){
-      const out='out.mp4'; await ffmpeg.run('-loop','1','-i',file.name,'-t','5','-vf','format=yuv420p',out); const data=ffmpeg.FS('readFile',out); downloadResult(data,out); status.textContent='Done'; bar.value=100; return;
-    }
-
-    // audio only from video
-    if(mode==='audio_only'){
-      const out='out.mp3'; await ffmpeg.run('-i',file.name,'-vn','-acodec','mp3',out); const data=ffmpeg.FS('readFile',out); downloadResult(data,out); status.textContent='Done'; bar.value=100; return;
-    }
-
-    // regular conversion (user selected target e.g. mp4, webm, mp3)
-    const outExt=(mode==='mp3'||mode==='wav'||mode==='mp4'||mode==='webm'||mode==='gif')?mode:'out';
-    const outName=`out.${outExt}`;
-    await ffmpeg.run('-i',file.name,outName);
-    const data=ffmpeg.FS('readFile',outName); downloadResult(data,outName); status.textContent='Done'; bar.value=100; return;
-
-  }catch(err){ console.error('conversion failed',err); status.textContent='Conversion failed — check console'; }
-}
-
-function downloadResult(data, name){ const blob=new Blob([data.buffer]); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=name; a.click(); URL.revokeObjectURL(url); }
-
-// UI toggles
-const formatSelect=document.getElementById('formatSelect'); formatSelect.addEventListener('change',()=>{ const v=formatSelect.value; document.getElementById('trimControls').style.display=v==='trim'?'block':'none'; document.getElementById('musicVideoControls').style.display=v==='music_video'?'block':'none';});
-
-</script>
+    <script src="script.js"></script>
 </body>
 </html>
