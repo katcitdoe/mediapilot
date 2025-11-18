@@ -36,7 +36,7 @@ function initImageConverter() {
     const heightInput = document.getElementById('heightInput');
 
     // 2. Initial Status Check
-    statusMessage.innerHTML = '✅ Ready';
+    statusMessage.innerHTML = '✅ Idle';
     statusMessage.className = 'status-message success';
     convertButton.disabled = false;
     convertButton.textContent = 'Submit'; // Changed 'Convert File' to 'Submit' to match HTML button text
