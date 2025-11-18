@@ -1,3 +1,3 @@
 # mediapilot
-convert and or edit all kinds of media.  
+convert, resize, and compress media.  
 ## NO BULLSHIT!!!!!
