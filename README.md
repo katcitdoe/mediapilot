@@ -1,2 +1,3 @@
 # mediapilot
-work in progress
+CONVERT EDIT ORGANIZE
+IMAGES AUDIO VIDEOS
