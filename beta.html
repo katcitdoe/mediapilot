@@ -202,7 +202,7 @@
     }
 
     // destructure helpers and create ffmpeg instance
-    (({ createFFmpeg: createFFmpegFn, fetchFile: fetchFileFn } = (window.FFmpeg || window.ffmpeg));
+    (({ createFFmpeg: createFFmpegFn, fetchFile: fetchFileFn } = (window.FFmpeg || window.ffmpeg))
     ffmpeg = createFFmpegFn({ log: true, corePath: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.2/dist/ffmpeg-core.js' });
   }
 
