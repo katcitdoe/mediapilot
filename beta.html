@@ -11,34 +11,47 @@
     <h1>Client-Side Image Converter</h1>
     <p>Convert images between common formats, now supporting conversion from SVG to raster.</p>
 
-    <input type="file" id="fileInput" accept="image/*, .svg, .tiff">
-    
-    <label for="formatSelect">Convert to:</label>
-    <select id="formatSelect">
-        <option value="image/png">PNG (.png)</option>
-        <option value="image/jpeg">JPEG (.jpg)</option>
-        <option value="image/webp">WebP (.webp)</option>
+    <div class="input-group">
+        <div class="input-field">
+            <label for="fileInput">Select File:</label>
+            <input type="file" id="fileInput" accept="image/*, .svg, .tiff">
+        </div>
         
-        <option value="image/gif">GIF (.gif - Single Frame)</option>
+        <div class="input-field">
+            <label for="formatSelect">Convert to:</label>
+            <select id="formatSelect">
+                <option value="image/png">PNG (.png)</option>
+                <option value="image/jpeg">JPEG (.jpg)</option>
+                <option value="image/webp">WebP (.webp)</option>
+                <option value="image/gif">GIF (.gif - Single Frame)</option>
+                <option value="image/avif" disabled>AVIF (.avif - Requires library)</option>
+                <option value="image/tiff" disabled>TIFF (.tiff - Requires library)</option>
+            </select>
+        </div>
+    </div>
+    <div id="controls">
+        <p>Conversion Options</p>
         
-        <option value="image/avif" disabled>AVIF (.avif - Requires library)</option>
-        <option value="image/tiff" disabled>TIFF (.tiff - Requires library)</option>
-    </select>
-    
-    <div id="controls" style="margin-top: 20px; text-align: left; padding: 10px; border: 1px solid #333; border-radius: 4px;">
-        <p style="color: #4CAF50; font-weight: bold; margin-top: 0;">Conversion Options</p>
-        
-        <label for="qualityInput" style="display: block; margin-top: 10px;">JPEG/WebP Quality (0.1 to 1.0):</label>
-        <input type="number" id="qualityInput" value="0.9" min="0.1" max="1.0" step="0.05" style="width: 100%;" />
+        <div class="resize-grid">
+            <div class="input-field">
+                <label for="qualityInput">Quality (0.1 to 1.0):</label>
+                <input type="number" id="qualityInput" value="0.9" min="0.1" max="1.0" step="0.05" />
+            </div>
 
-        <label for="widthInput" style="display: block; margin-top: 15px;">Resize Width (px, leave blank for original):</label>
-        <input type="number" id="widthInput" placeholder="Original Width" style="width: 100%;" />
+            <div class="input-field">
+                <label for="widthInput">Resize Width (px):</label>
+                <input type="number" id="widthInput" placeholder="Original Width" />
+            </div>
 
-        <label for="heightInput" style="display: block; margin-top: 15px;">Resize Height (px, leave blank for original):</label>
-        <input type="number" id="heightInput" placeholder="Original Height" style="width: 100%;" />
+            <div class="input-field">
+                <label for="heightInput">Resize Height (px):</label>
+                <input type="number" id="heightInput" placeholder="Original Height" />
+            </div>
+        </div>
     </div>
     
-    <button id="convertButton" style="margin-top: 20px;">Convert File</button>
+
+    <button id="convertButton">Convert File</button>
 
     <div id="statusMessage" class="status-message"></div>
 </div>
