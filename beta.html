@@ -18,14 +18,8 @@
     .col { flex: 1; }
     .remove { background: #ff4d4d; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
   </style>
+  <!-- load the UMD build that exposes window.FFmpeg -->
   <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.6/dist/umd/ffmpeg.js"></script>
-<script>
-  const { createFFmpeg, fetchFile } = FFmpeg;
-  const ffmpeg = createFFmpeg({
-    log: true,
-    corePath: "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.2/dist/ffmpeg-core.js"
-  });
-</script>
 </head>
 <body>
   <div class="container">
@@ -184,11 +178,33 @@
   /* ==============================
       FFMPEG WITH PROGRESS + NEW MODES
   ============================== */
-  const { createFFmpeg, fetchFile } = window.FFmpeg;
-  const ffmpeg = createFFmpeg({
-    log: true,
-    corePath: "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.2/dist/ffmpeg-core.js"
-  });
+  // lazy bindings; we'll populate these after the ffmpeg script is available
+  let createFFmpegFn, fetchFileFn, ffmpeg;
+
+  function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  async function ensureFFmpegReady() {
+    // If already initialized, nothing to do
+    if (ffmpeg) return;
+
+    // If window.FFmpeg is not yet available, wait briefly for it to load
+    for (let i = 0; i < 50; i++) {
+      if (window.FFmpeg) break;
+      await wait(100);
+    }
+
+    // If still not available, attempt to dynamically load the UMD script
+    if (!window.FFmpeg) {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.6/dist/umd/ffmpeg.js';
+      document.head.appendChild(s);
+      await new Promise((res, rej) => { s.onload = res; s.onerror = () => rej(new Error('Failed to load ffmpeg UMD script')); });
+    }
+
+    // destructure helpers and create ffmpeg instance
+    ({ createFFmpeg: createFFmpegFn, fetchFile: fetchFileFn } = window.FFmpeg);
+    ffmpeg = createFFmpegFn({ log: true, corePath: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.2/dist/ffmpeg-core.js' });
+  }
 
   async function convertMedia() {
     const status = document.getElementById('convertStatus');
@@ -202,19 +218,23 @@
     }
 
     bar.value = 0;
-    status.textContent = "Loading ffmpeg...";
+    status.textContent = "Initializing ffmpeg...";
 
-    ffmpeg.setProgress(({ ratio }) => {
-      bar.value = Math.floor(ratio * 100);
-    });
+    try {
+      await ensureFFmpegReady();
+    } catch (err) {
+      console.error('ffmpeg load error', err);
+      status.textContent = 'Failed to load ffmpeg. Check console.';
+      return;
+    }
 
-    await ffmpeg.load();
+    ffmpeg.setProgress(({ ratio }) => { bar.value = Math.floor(ratio * 100); });
 
     status.textContent = "Preparing...";
 
     // Write the main file if needed
     if (file) {
-      ffmpeg.FS('writeFile', file.name, await fetchFile(file));
+      ffmpeg.FS('writeFile', file.name, await fetchFileFn(file));
     }
 
     let out = "output." + (format === 'music_video' ? 'mp4' : format);
@@ -246,8 +266,8 @@
       }
 
       status.textContent = 'Writing files...';
-      ffmpeg.FS('writeFile', mvImg.name, await fetchFile(mvImg));
-      ffmpeg.FS('writeFile', mvAud.name, await fetchFile(mvAud));
+      ffmpeg.FS('writeFile', mvImg.name, await fetchFileFn(mvImg));
+      ffmpeg.FS('writeFile', mvAud.name, await fetchFileFn(mvAud));
 
       out = 'musicvideo.mp4';
 
@@ -298,17 +318,22 @@
     /* ===============================
         EXPORT RESULT
     =============================== */
-    const data = ffmpeg.FS('readFile', out);
-    const blob = new Blob([data.buffer]);
-    const url = URL.createObjectURL(blob);
+    try {
+      const data = ffmpeg.FS('readFile', out);
+      const blob = new Blob([data.buffer]);
+      const url = URL.createObjectURL(blob);
 
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = out;
-    a.click();
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = out;
+      a.click();
 
-    status.textContent = "Done!";
-    bar.value = 100;
+      status.textContent = "Done!";
+      bar.value = 100;
+    } catch (err) {
+      console.error('export failed', err);
+      status.textContent = 'Export failed — check console.';
+    }
   }
 </script>
 </body>
