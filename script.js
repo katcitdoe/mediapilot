@@ -2,24 +2,38 @@
 // UNIVERSAL INITIALIZATION AND PAGE CHECK
 // ====================================================================
 
-// Check if we are on the Audio page by looking for a unique ID.
-// This determines which initialization function to run.
-const isAudioPage = !!document.getElementById('bitrateInput'); 
+// Check for unique elements to determine the page type.
+const hasAudioElements = !!document.getElementById('bitrateInput'); 
+const hasImageElements = !!document.getElementById('qualityInput'); 
 
 document.addEventListener('DOMContentLoaded', async () => {
-    if (isAudioPage) {
-        // Run FFmpeg logic for the audio page
+    if (hasAudioElements && !hasImageElements) {
+        // This block runs ONLY if the unique Audio element is present 
+        // AND the unique Image element is NOT present.
         console.log("Audio Converter: Initializing FFmpeg logic.");
         await initAudioConverter();
-    } else {
-        // Run Canvas/Blob logic for the image page
+    } 
+    
+    else if (hasImageElements && !hasAudioElements) {
+        // This block runs ONLY if the unique Image element is present
+        // AND the unique Audio element is NOT present.
         console.log("Image Converter: Initializing Canvas/Blob logic.");
         initImageConverter();
+    }
+    
+    else {
+        // Safety message for pages with no specific converter logic or mixed pages.
+        console.warn("Initialization Warning: Could not determine page type or elements are mixed.");
+        const status = document.getElementById('statusMessage');
+        if (status) {
+            status.innerHTML = '⚠️ Converter initialization failed (Mixed element error).';
+        }
     }
 });
 
 // ====================================================================
 // IMAGE CONVERTER LOGIC (Canvas API with Blob URL) - Runs on index.html
+// (No changes needed in the function body, as it's now called conditionally)
 // ====================================================================
 
 function initImageConverter() {
@@ -159,6 +173,7 @@ function initImageConverter() {
 
 // ====================================================================
 // AUDIO CONVERTER LOGIC (FFmpeg Wasm) - Runs on audio.html
+// (No changes needed in the function body, as it's now called conditionally)
 // ====================================================================
 
 async function initAudioConverter() {
@@ -172,19 +187,18 @@ async function initAudioConverter() {
     const statusMessage = document.getElementById('statusMessage');
 
     if (!convertButton) {
-        // Safety check in case the FFmpeg script tag is missing entirely
         console.error("Audio initialization failed: Convert button not found.");
         return;
     }
     
-    // 2. FFmpeg Initialization
-    // Assumes FFmpeg global object is defined by the script tag in audio.html
+    // 2. FFmpeg Initialization 
     const FFmpegGlobal = FFmpeg; 
     const { createFFmpeg, fetchFile } = FFmpegGlobal;
     
     const ffmpeg = createFFmpeg({ 
         log: true,
-        corePath: 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.7/dist/ffmpeg-core.js' 
+        // *** This path must be correct based on your local files ***
+        corePath: './ffmpeg-core.js' 
     });
 
     // 3. Load FFmpeg Core
@@ -195,7 +209,7 @@ async function initAudioConverter() {
         statusMessage.innerHTML = '✅ FFmpeg ready. Select a file.';
         statusMessage.className = 'status-message success';
     } catch (e) {
-        // This catch block will alert if ffmpeg-core.js fails to load
+        // This catch block handles silent failures during network loading of the Wasm files
         statusMessage.innerHTML = `❌ Failed to load FFmpeg Core. Check console for details.`;
         statusMessage.className = 'status-message error';
         console.error("FFmpeg Load Error:", e);
