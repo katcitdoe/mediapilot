@@ -5,67 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>mediapilot</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 20px;
-      background: #000;
-      color: #fff;
-    }
-    h1 {
-      text-align: center;
-    }
-    .container {
-      max-width: 600px;
-      margin: auto;
-      background: #111;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(255,255,255,0.1);
-    }
-    input, button {
-      width: 100%;
-      margin: 8px 0;
-      border-radius: 5px;
-      border: 1px solid #444;
-      font-size: 16px;
-      background: #222;
-      color: #fff;
-    }
-    button {
-      cursor: pointer;
-      background: #007bff;
-      border: none;
-    }
-    button:hover {
-      background: #0056b3;
-    }
-    ul {
-      padding-left: 0;
-      list-style: none;
-    }
-    li {
-      background: #222;
-      padding: 10px;
-      border-radius: 5px;
-      margin-bottom: 6px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      cursor: grab;
-    }
-    li.dragging {
-      opacity: 0.3;
-    }
-    .remove {
-      background: #ff4d4d;
-      color: white;
-      border: none;
-      padding: 5px 10px;
-      border-radius: 5px;
-      cursor: pointer;
-    }
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #000; color: #fff; }
+    h1 { text-align: center; }
+    .container { max-width: 700px; margin: auto; background: #111; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(255,255,255,0.06); }
+    input, button, select { width: 100%; padding: 10px; margin: 8px 0; border-radius: 5px; border: 1px solid #444; font-size: 16px; background: #222; color: #fff; }
+    button { cursor: pointer; background: #007bff; border: none; }
+    button:hover { background: #0056b3; }
+    ul { padding-left: 0; list-style: none; }
+    li { background: #222; padding: 10px; border-radius: 5px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; cursor: grab; }
+    li.dragging { opacity: 0.3; }
+    .remove { background: #ff4d4d; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
+    #convertStatus { font-size: 14px; color: #ddd; }
+    .small { font-size: 13px; color:#aaa; }
   </style>
+  <!-- ffmpeg.wasm (core will be fetched from CDN) -->
   <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js""></script>
 </head>
 <body>
@@ -85,18 +38,19 @@
 
     <hr style="margin:20px 0; border-color:#333;" />
 
+    <h2>Convert Images</h2>
     <input type="file" id="mediaConvertInput" accept="image/*" />
 
-    <label>convert to</label>
+    <label>Convert to format:</label>
     <select id="formatSelect">
       <option value="jpg">JPG</option>
       <option value="png">PNG</option>
       <option value="webp">WEBP</option>
     </select>
 
-    <button onclick="convertMedia()">submit</button>
+    <button onclick="convertMedia()">convert image</button>
     <p id="convertStatus"></p>
-    <p class="small">im not responsible for whatever the fuck you use this tool for</p>
+    <p class="small">Image conversion only. Video conversion removed.</p>Note: image conversions use the browser (fast). Video conversions use ffmpeg.wasm and can be large/slow and may not support all codecs in the browser build.</p>
   </div>
 
   <script>
