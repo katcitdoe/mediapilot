@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // No unique element found, or both found (Mixed Error)
         console.warn("Initialization Warning: Could not determine page type. Check element IDs.");
         if (status) {
-            status.innerHTML = '⚠️ Converter initialization failed (Mixed or Missing element error).';
+            status.innerHTML = '⚠️ Page type undetermined';
             status.className = 'status-message error';
         }
     }
@@ -47,7 +47,7 @@ function initImageConverter() {
     const heightInput = document.getElementById('heightInput');
 
     // 2. Initial Status Check
-    statusMessage.innerHTML = '✅ Image Converter Ready.';
+    statusMessage.innerHTML = '✅ Ready';
     statusMessage.className = 'status-message success';
     convertButton.disabled = false;
     convertButton.textContent = 'Convert File';
@@ -57,7 +57,7 @@ function initImageConverter() {
 
     function handleImageConversion() {
         if (fileInput.files.length === 0) {
-            statusMessage.innerHTML = '⚠️ Please select a file first.';
+            statusMessage.innerHTML = '⚠️ Select a file';
             statusMessage.className = 'status-message error';
             return;
         }
@@ -69,7 +69,7 @@ function initImageConverter() {
         const isConvertibleImage = selectedFile.type.startsWith('image/') || selectedFile.name.toLowerCase().endsWith('.svg');
         
         if (!isConvertibleImage) {
-            statusMessage.innerHTML = '⚠️ Selected file is not a supported image format.';
+            statusMessage.innerHTML = '⚠️ Format unsupported';
             statusMessage.className = 'status-message error';
             return;
         }
@@ -78,7 +78,7 @@ function initImageConverter() {
         const targetWidth = parseInt(widthInput.value);
         const targetHeight = parseInt(heightInput.value);
 
-        statusMessage.innerHTML = `⚙️ Converting **${selectedFile.name}** to **.${targetExtension}**...`;
+        statusMessage.innerHTML = `⚙️ Converting`;
         statusMessage.className = 'status-message processing';
         convertButton.disabled = true;
         
@@ -132,14 +132,14 @@ function initImageConverter() {
                         document.body.removeChild(downloadLink);
                         URL.revokeObjectURL(url);
 
-                        statusMessage.innerHTML = `✅ Conversion Complete! **.${targetExtension}** (${Math.round(newWidth)}x${Math.round(newHeight)}) is downloading.`;
+                        statusMessage.innerHTML = `✅ Done`;
                         statusMessage.className = 'status-message success';
                         
                     }, targetMimeType, quality);
 
                 } catch (e) {
                     console.error("Canvas Conversion Error:", e);
-                    statusMessage.innerHTML = '❌ Image Conversion failed during processing.';
+                    statusMessage.innerHTML = '❌ Could not convert file';
                     statusMessage.className = 'status-message error';
                 } finally {
                     convertButton.disabled = false;
@@ -148,7 +148,7 @@ function initImageConverter() {
             
             img.onerror = () => {
                 URL.revokeObjectURL(imageUrl);
-                statusMessage.innerHTML = '❌ Error loading the image file.';
+                statusMessage.innerHTML = '❌ Could not load file';
                 statusMessage.className = 'status-message error';
                 convertButton.disabled = false;
             };
@@ -158,7 +158,7 @@ function initImageConverter() {
 
         reader.onerror = (error) => {
             console.error("FileReader Error:", error);
-            statusMessage.innerHTML = '❌ Error reading the file.';
+            statusMessage.innerHTML = '❌ Could not read file';
             statusMessage.className = 'status-message error';
             convertButton.disabled = false;
         };
@@ -188,13 +188,7 @@ async function initAudioConverter() {
     
     // 2. FFmpeg Initialization 
     // FIX: Check for FFmpeg definition to avoid ReferenceError
-    if (typeof FFmpeg === 'undefined') {
-        statusMessage.innerHTML = `❌ FFmpeg library not found. Ensure the script tag is in audio.html.`;
-        statusMessage.className = 'status-message error';
-        console.error("FFmpeg Library Error: Global 'FFmpeg' object is undefined. Check script tag loading order.");
-        return;
-    }
-    
+
     // Destructure directly from the global FFmpeg object
     const { createFFmpeg, fetchFile } = FFmpeg;
     
@@ -202,21 +196,28 @@ async function initAudioConverter() {
         log: true,
         corePath: 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.15/dist/umd/ffmpeg.min.js' 
     });
+    
+    if (typeof FFmpeg === 'undefined') {
+        statusMessage.innerHTML = `❌ Could not find FFmpeg`;
+        statusMessage.className = 'status-message error';
+        console.error("Global 'FFmpeg' object is undefined. Check script tag loading order.");
+        return;
+    }
 
     // 3. Load FFmpeg Core
     try {
         convertButton.disabled = true;
-        statusMessage.innerHTML = '⚙️ Loading FFmpeg Core... please wait.';
+        statusMessage.innerHTML = '⚙️ Reading FFmpeg';
         statusMessage.className = 'status-message processing';
 
         await ffmpeg.load();
         
         convertButton.disabled = false;
         convertButton.textContent = 'Process Audio File';
-        statusMessage.innerHTML = '✅ FFmpeg ready. Select a file.';
+        statusMessage.innerHTML = '✅ Ready';
         statusMessage.className = 'status-message success';
     } catch (e) {
-        statusMessage.innerHTML = `❌ Failed to load FFmpeg Core. Check console for details.`;
+        statusMessage.innerHTML = `❌ Could not read FFmpeg`;
         statusMessage.className = 'status-message error';
         console.error("FFmpeg Load Error:", e);
         return; 
@@ -226,7 +227,7 @@ async function initAudioConverter() {
     ffmpeg.setProgress(({ ratio }) => {
         if (ratio < 0) return;
         const percentage = Math.round(ratio * 100);
-        statusMessage.innerHTML = `⚙️ Processing... ${percentage}%`;
+        statusMessage.innerHTML = `⚙️ Processing`;
         statusMessage.className = 'status-message processing';
     });
 
@@ -234,7 +235,7 @@ async function initAudioConverter() {
     // 4. Main Conversion Logic
     convertButton.addEventListener('click', async () => {
         if (fileInput.files.length === 0) {
-            statusMessage.innerHTML = '⚠️ Please select an audio file first.';
+            statusMessage.innerHTML = '⚠️ Select a file';
             statusMessage.className = 'status-message error';
             return;
         }
@@ -272,7 +273,7 @@ async function initAudioConverter() {
         command.push(outputFileName);
 
 
-        statusMessage.innerHTML = `⚙️ Preparing **${inputFileName}** for processing...`;
+        statusMessage.innerHTML = `⚙️ Processing`;
         statusMessage.className = 'status-message processing';
         convertButton.disabled = true;
 
@@ -303,12 +304,12 @@ async function initAudioConverter() {
             document.body.removeChild(downloadLink);
             URL.revokeObjectURL(url);
 
-            statusMessage.innerHTML = `✅ Processing Complete! **${downloadLink.download}** is downloading.`;
+            statusMessage.innerHTML = `✅ Done`;
             statusMessage.className = 'status-message success'; 
             
         } catch (e) {
             console.error("FFmpeg Processing Error:", e);
-            statusMessage.innerHTML = '❌ Processing failed. Check console for details.';
+            statusMessage.innerHTML = '❌ Could not edit file';
             statusMessage.className = 'status-message error';
         } finally {
             try {
@@ -317,7 +318,7 @@ async function initAudioConverter() {
 
             convertButton.disabled = false;
             if (!statusMessage.className.includes('error')) {
-                 statusMessage.innerHTML = '✅ FFmpeg ready. Select a file.';
+                 statusMessage.innerHTML = '✅ Ready';
                  statusMessage.className = 'status-message success';
             }
         }
