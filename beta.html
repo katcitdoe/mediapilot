@@ -3,31 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Basic File Converter</title>
+    <title>Client-Side File Converter (ZIP)</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="converter-container">
-        <h1>Simple File Converter</h1>
-        <p>Select a file and choose your desired output format.</p>
+        <h1>Client-Side ZIP Converter</h1>
+        <p>This tool compresses your file into a .zip archive locally (client-side).</p>
 
         <input type="file" id="fileInput" accept="*/*">
         
         <label for="formatSelect">Convert to:</label>
-        <select id="formatSelect">
-            <option value="pdf">PDF (.pdf)</option>
-            <option value="jpg">JPEG (.jpg)</option>
-            <option value="png">PNG (.png)</option>
-            <option value="zip">ZIP (.zip)</option>
-            <option value="mp4">MP4 (.mp4)</option>
-            <option value="txt">Text (.txt)</option>
+        <select id="formatSelect" disabled>
+            <option value="zip">ZIP (.zip) - Client-Side</option>
         </select>
 
-        <button id="convertButton">Convert File</button>
+        <button id="convertButton">Convert to ZIP</button>
 
         <div id="statusMessage" class="status-message"></div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
