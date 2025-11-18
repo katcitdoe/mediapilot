@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mediapilot</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #000; color: #fff; }
+    h1 { text-align: center; }
+    .container { max-width: 600px; margin: auto; background: #111; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(255,255,255,0.1); }
+    input, button, select { width: 100%; padding: 10px; margin: 8px 0; border-radius: 5px; border: 1px solid #444; font-size: 16px; background: #222; color: #fff; }
+    button { cursor: pointer; background: #007bff; border: none; }
+    button:hover { background: #0056b3; }
+    ul { padding-left: 0; list-style: none; }
+    li { background: #222; padding: 10px; border-radius: 5px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; cursor: grab; }
+    li.dragging { opacity: 0.3; }
+    .remove { background: #ff4d4d; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
+  </style>
+  <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/ffmpeg.min.js"></script>
+</head>
+<body>
+  <h1>mediapilot</h1>
+  <div class="container">
+
+    <input id="listName" placeholder="name your list (christmas movies)" />
+    <input id="itemInput" placeholder="add anything (sarah by tyler the creator)" />
+    <button onclick="addItem()">submit</button>
+
+    <ul id="list"></ul>
+
+    <button onclick="exportList()">export json</button>
+
+    <input type="file" id="fileInput" accept="application/json" style="display:none;" onchange="importList()" />
+    <button onclick="document.getElementById('fileInput').click()">import json</button>
+
+    <hr style="margin:20px 0; border-color:#333;" />
+
+    <h2>Convert Media</h2>
+    <input type="file" id="mediaConvertInput" accept="image/*,video/*" />
+
+    <label>Convert to format:</label>
+    <select id="formatSelect">
+      <option value="jpg">JPG (image)</option>
+      <option value="png">PNG (image)</option>
+      <option value="webp">WEBP (image)</option>
+      <option value="mp4">MP4 (video)</option>
+      <option value="webm">WEBM (video)</option>
+    </select>
+
+    <button onclick="convertMedia()">convert file</button>
+    <p id="convertStatus"></p>
+
+  </div>
+
+  <script>
+    let mediaList = [];
+
+    function renderList() {
+      const ul = document.getElementById('list');
+      ul.innerHTML = '';
+      mediaList.forEach((item, index) => {
+        const li = document.createElement('li');
+        li.textContent = item;
+        li.draggable = true;
+        li.dataset.index = index;
+
+        li.addEventListener('dragstart', () => li.classList.add('dragging'));
+        li.addEventListener('dragend', () => {
+          li.classList.remove('dragging');
+          const newOrder = [...document.querySelectorAll('#list li')].map(li => li.firstChild.textContent);
+          mediaList = newOrder;
+        });
+
+        const btn = document.createElement('button');
+        btn.textContent = 'X';
+        btn.className = 'remove';
+        btn.onclick = () => removeItem(index);
+
+        li.appendChild(btn);
+        ul.appendChild(li);
+      });
+    }
+
+    function addItem() {
+      const input = document.getElementById('itemInput');
+      if (input.value.trim() !== '') {
+        mediaList.push(input.value.trim());
+        input.value = '';
+        renderList();
+      }
+    }
+
+    function removeItem(index) {
+      mediaList.splice(index, 1);
+      renderList();
+    }
+
+    function exportList() {
+      const data = { name: document.getElementById('listName').value, items: mediaList };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'media-list.json'; a.click(); URL.revokeObjectURL(url);
+    }
+
+    function importList() {
+      const file = document.getElementById('fileInput').files[0]; if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        try { const data = JSON.parse(e.target.result); document.getElementById('listName').value = data.name||''; mediaList = data.items||[]; renderList(); }
+        catch { alert('Invalid JSON file'); }
+      };
+      reader.readAsText(file);
+    }
+
+    const ul = document.getElementById('list');
+    ul.addEventListener('dragover', e => {
+      e.preventDefault();
+      const dragging = document.querySelector('.dragging');
+      const after = getDragAfter(ul, e.clientY);
+      if (after == null) ul.appendChild(dragging); else ul.insertBefore(dragging, after);
+    });
+
+    function getDragAfter(container, y) {
+      const items = [...container.querySelectorAll('li:not(.dragging)')];
+      return items.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height/2;
+        if (offset < 0 && offset > closest.offset) return { offset, element: child };
+        return closest;
+      }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+
+    async function convertMedia() {
+      const file = document.getElementById('mediaConvertInput').files[0];
+      const format = document.getElementById('formatSelect').value;
+      const status = document.getElementById('convertStatus');
+
+      if (!file) { status.textContent = 'Select a file first.'; return; }
+
+      status.textContent = 'Loading FFmpeg...';
+      const { createFFmpeg, fetchFile } = FFmpeg;
+      const ffmpeg = createFFmpeg({ log: false });
+      await ffmpeg.load();
+
+      status.textContent = 'Converting...';
+      ffmpeg.FS('writeFile', file.name, await fetchFile(file));
+
+      const output = `output.${format}`;
+      await ffmpeg.run('-i', file.name, output);
+
+      const data = ffmpeg.FS('readFile', output);
+      const blob = new Blob([data.buffer]);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = output; a.click();
+      URL.revokeObjectURL(url);
+
+      status.textContent = 'Done! Download should start.';
+    }
+
+  </script>
+</body>
+</html>
