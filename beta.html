@@ -194,7 +194,7 @@
     }
 
     // If still not available, attempt to dynamically load the UMD script
-    if (!window.FFmpeg || window.ffmpeg) {
+    if (!(window.FFmpeg || window.ffmpeg)) {
       const s = document.createElement('script');
       s.src = 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.6/dist/umd/ffmpeg.js';
       document.head.appendChild(s);
@@ -202,7 +202,7 @@
     }
 
     // destructure helpers and create ffmpeg instance
-    ({ createFFmpeg: createFFmpegFn, fetchFile: fetchFileFn } = window.FFmpeg || window.ffmpeg);
+    (({ createFFmpeg: createFFmpegFn, fetchFile: fetchFileFn } = (window.FFmpeg || window.ffmpeg));
     ffmpeg = createFFmpegFn({ log: true, corePath: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.2/dist/ffmpeg-core.js' });
   }
 
