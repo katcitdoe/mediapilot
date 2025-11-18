@@ -2,26 +2,26 @@
 // UNIVERSAL INITIALIZATION AND PAGE CHECK
 // ====================================================================
 
-// Check if we are on the Audio page (using an ID unique to audio.html)
+// Check if we are on the Audio page by looking for an element unique to audio.html.
 const isAudioPage = !!document.getElementById('bitrateInput'); 
 
 document.addEventListener('DOMContentLoaded', async () => {
     if (isAudioPage) {
-        // Run Audio Converter Logic
+        // If on audio.html, run the FFmpeg logic.
         await initAudioConverter();
     } else {
-        // Run Image Converter Logic
+        // If on index.html (or any other page), run the Canvas Image logic.
         initImageConverter();
     }
 });
 
 
 // ====================================================================
-// IMAGE CONVERTER LOGIC (Canvas API)
+// IMAGE CONVERTER LOGIC (Canvas API) - Runs on index.html
 // ====================================================================
 
 function initImageConverter() {
-    // Image-specific element references
+    // Image-specific element references from index.html
     const fileInput = document.getElementById('fileInput');
     const formatSelect = document.getElementById('formatSelect');
     const convertButton = document.getElementById('convertButton');
@@ -138,11 +138,11 @@ function initImageConverter() {
 
 
 // ====================================================================
-// AUDIO CONVERTER LOGIC (FFmpeg Wasm)
+// AUDIO CONVERTER LOGIC (FFmpeg Wasm) - Runs on audio.html
 // ====================================================================
 
 async function initAudioConverter() {
-    // Audio-specific element references
+    // Audio-specific element references from audio.html
     const fileInput = document.getElementById('fileInput');
     const formatSelect = document.getElementById('formatSelect');
     const bitrateInput = document.getElementById('bitrateInput');
@@ -151,11 +151,10 @@ async function initAudioConverter() {
     const convertButton = document.getElementById('convertButton');
     const statusMessage = document.getElementById('statusMessage');
 
-    // FFmpeg setup variables (Access via global FFmpeg object from the CDN link)
+    // --- FFmpeg Initialization ---
     const FFmpegGlobal = FFmpeg;
     const { createFFmpeg, fetchFile } = FFmpegGlobal;
     
-    // Initialize the ffmpeg instance
     const ffmpeg = createFFmpeg({ 
         log: true,
         corePath: 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.7/dist/ffmpeg-core.js' 
@@ -172,6 +171,7 @@ async function initAudioConverter() {
         statusMessage.innerHTML = `❌ Failed to load FFmpeg. Check console.`;
         statusMessage.className = 'status-message error';
         console.error("FFmpeg Load Error:", e);
+        return; // Stop initialization if load fails
     }
     
     // Set up a progress listener
@@ -204,7 +204,7 @@ async function initAudioConverter() {
         // --- Build FFmpeg Command Array ---
         let command = [];
 
-        // 1. Trimming options (must come BEFORE input file for faster processing)
+        // 1. Trimming options
         if (trimStart) {
             command.push('-ss', trimStart);
         }
@@ -269,7 +269,6 @@ async function initAudioConverter() {
             } catch {}
 
             convertButton.disabled = false;
-            // Restore status message unless an error occurred
             if (!statusMessage.className.includes('error')) {
                  statusMessage.innerHTML = '✅ FFmpeg ready. Select a file.';
                  statusMessage.className = 'status-message success';
