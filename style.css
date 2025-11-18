@@ -150,39 +150,3 @@ input[type="file"]::file-selector-button:hover {
 .status-message.success {
     color: var(--accent);
 }
-
-/* --- Tab Navigation Styles --- */
-.tab-navigation {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    margin-bottom: 20px;
-}
-
-.tab-button {
-    background: #282828;
-    color: var(--muted);
-    border: 1px solid #333;
-    padding: 10px 20px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background-color 0.2s, color 0.2s, border-color 0.2s;
-    font-weight: 600;
-    width: 250px;
-}
-
-.tab-button:hover {
-    background-color: #353535;
-    color: var(--text);
-}
-
-.tab-button.active {
-    background-color: var(--accent);
-    color: var(--text);
-    border-color: var(--accent);
-    box-shadow: 0 2px 10px rgba(76, 175, 80, 0.4);
-}
-
-.tab-content.hidden {
-    display: none;
-}
