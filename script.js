@@ -192,8 +192,7 @@ async function initAudioConverter() {
     
     const ffmpeg = createFFmpeg({ 
         log: true,
-        // Using the local path for better reliability on GitHub Pages
-        corePath: './ffmpeg-core.js' 
+        corePath: 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.7/dist/ffmpeg.min.js' 
     });
 
     // 3. Load FFmpeg Core
