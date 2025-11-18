@@ -138,8 +138,7 @@ async function ensureFFmpegReady(){
   ffmpeg = createFFmpegFn({ log:false, corePath: 'https://unpkg.com/@ffmpeg/core@0.10.1/dist/ffmpeg-core.js' });
 }
 
-function cancelOperation(
-(){ abortFlag=true; }
+function cancelOperation(){ abortFlag = true; }
 
 /* -----------------------------
    Main convert logic with modes
