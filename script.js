@@ -1,4 +1,27 @@
 // ====================================================================
+// UNIVERSAL INITIALIZATION AND PAGE CHECK
+// ====================================================================
+
+document.addEventListener('DOMContentLoaded', async () => {
+    // Check if the unique Image element exists (it does in index.html)
+    const hasImageElements = !!document.getElementById('qualityInput');
+
+    if (hasImageElements) {
+        // Found unique Image element, proceed with Image Converter
+        console.log("Image Converter: Initializing Canvas/Blob logic.");
+        initImageConverter();
+    } else {
+        // No required element found
+        const status = document.getElementById('statusMessage');
+        console.warn("Initialization Warning: Could not find Image Converter elements.");
+        if (status) {
+            status.innerHTML = '⚠️ Page type undetermined';
+            status.className = 'status-message error';
+        }
+    }
+});
+
+// ====================================================================
 // IMAGE CONVERTER LOGIC (Canvas API with Blob URL) - Runs on index.html
 // ====================================================================
 
@@ -16,7 +39,7 @@ function initImageConverter() {
     statusMessage.innerHTML = '✅ Ready';
     statusMessage.className = 'status-message success';
     convertButton.disabled = false;
-    convertButton.textContent = 'Convert File';
+    convertButton.textContent = 'Submit'; // Changed 'Convert File' to 'Submit' to match HTML button text
 
     // 3. Event Listener
     convertButton.addEventListener('click', handleImageConversion);
@@ -31,9 +54,9 @@ function initImageConverter() {
         const selectedFile = fileInput.files[0];
         const targetMimeType = formatSelect.value;
         const targetExtension = targetMimeType.split('/')[1]?.replace('jpeg', 'jpg') || targetMimeType;
-        
+
         const isConvertibleImage = selectedFile.type.startsWith('image/') || selectedFile.name.toLowerCase().endsWith('.svg');
-        
+
         if (!isConvertibleImage) {
             statusMessage.innerHTML = '⚠️ Format unsupported';
             statusMessage.className = 'status-message error';
@@ -47,23 +70,23 @@ function initImageConverter() {
         statusMessage.innerHTML = `⚙️ Converting`;
         statusMessage.className = 'status-message processing';
         convertButton.disabled = true;
-        
+
         // --- PERFORMANCE FIX: Use ArrayBuffer/Blob URL instead of Data URL ---
         const reader = new FileReader();
         reader.onload = (event) => {
             const arrayBuffer = event.target.result;
             const blob = new Blob([arrayBuffer], { type: selectedFile.type });
             const imageUrl = URL.createObjectURL(blob);
-            
+
             const img = new Image();
-            
+
             img.onload = () => {
-                URL.revokeObjectURL(imageUrl); 
-                
+                URL.revokeObjectURL(imageUrl);
+
                 try {
                     let newWidth = img.width;
                     let newHeight = img.height;
-                    
+
                     // Resizing Logic
                     if (targetWidth > 0 && targetHeight > 0) {
                         newWidth = targetWidth;
@@ -80,7 +103,7 @@ function initImageConverter() {
                     const canvas = document.createElement('canvas');
                     canvas.width = newWidth;
                     canvas.height = newHeight;
-                    
+
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, newWidth, newHeight);
 
@@ -88,19 +111,19 @@ function initImageConverter() {
                     canvas.toBlob((blob) => {
                         const downloadLink = document.createElement('a');
                         const url = URL.createObjectURL(blob);
-                        
+
                         downloadLink.href = url;
                         downloadLink.download = `${selectedFile.name.substring(0, selectedFile.name.lastIndexOf('.')) || 'image'}.${targetExtension}`;
-                        
+
                         document.body.appendChild(downloadLink);
                         downloadLink.click();
-                        
+
                         document.body.removeChild(downloadLink);
                         URL.revokeObjectURL(url);
 
                         statusMessage.innerHTML = `✅ Done`;
                         statusMessage.className = 'status-message success';
-                        
+
                     }, targetMimeType, quality);
 
                 } catch (e) {
@@ -111,7 +134,7 @@ function initImageConverter() {
                     convertButton.disabled = false;
                 }
             };
-            
+
             img.onerror = () => {
                 URL.revokeObjectURL(imageUrl);
                 statusMessage.innerHTML = '❌ Could not load file';
