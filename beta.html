@@ -1,340 +1,220 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>mediapilot</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>mediapilot — beta</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #000; color: #fff; }
-    h1 { text-align: center; }
-    .container { max-width: 750px; margin: auto; background: #111; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(255,255,255,0.06); }
-    input, button, select, progress { width: 100%; padding: 10px; margin: 8px 0; border-radius: 5px; border: 1px solid #444; font-size: 16px; background: #222; color: #fff; }
-    button { cursor: pointer; background: #007bff; border: none; }
-    button:hover { background: #0056b3; }
-    ul { padding-left: 0; list-style: none; }
-    li { background: #222; padding: 10px; border-radius: 5px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; cursor: grab; }
-    li.dragging { opacity: 0.3; }
-    .row { display: flex; gap: 10px; }
-    .col { flex: 1; }
-    .remove { background: #ff4d4d; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
+    :root{--bg:#000;--panel:#0f0f10;--muted:#9aa0a6;--accent:#1e90ff}
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial; background:var(--bg); color:#fff}
+    .page{min-height:100%;display:flex;align-items:flex-start;justify-content:center;padding:28px}
+    .card{width:900px;max-width:96%;background:linear-gradient(180deg,#0b0b0b, #141414);border-radius:12px;padding:20px;box-shadow:0 6px 30px rgba(0,0,0,0.6)}
+    h1{margin:0 0 12px;font-weight:600;text-align:center}
+    .row{display:flex;gap:12px}
+    .col{flex:1}
+    input,select,button,progress{background:#111;border:1px solid #222;color:#fff;padding:10px;border-radius:8px;font-size:14px}
+    input::placeholder{color:#666}
+    button{cursor:pointer}
+    .small{font-size:13px;color:var(--muted)}
+    ul{list-style:none;padding:0;margin:8px 0 16px}
+    li{display:flex;align-items:center;justify-content:space-between;background:#111;padding:8px 10px;border-radius:8px;margin-bottom:8px;cursor:grab}
+    .remove{background:#ff4d4d;border:none;color:#fff;padding:6px 8px;border-radius:6px}
+    hr{border:none;border-top:1px solid #151515;margin:16px 0}
+    label{font-size:13px;color:var(--muted);display:block;margin-top:6px}
+    .controls{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    pre{background:#080808;padding:10px;border-radius:8px;max-height:180px;overflow:auto}
+    .muted{color:#999}
+    .footer{margin-top:12px;text-align:center;color:#888;font-size:13px}
   </style>
-  <!-- load the UMD build that exposes window.FFmpeg || window.ffmpeg -->
-  <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/umd/ffmpeg.js"></script>
+  <!-- Load the UMD build of ffmpeg.wasm (UMD exposes window.FFmpeg or window.ffmpeg). Using jsDelivr for CORS-safe core. -->
+  <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.6/dist/umd/ffmpeg.js"></script>
 </head>
 <body>
-  <div class="container">
-    <h1>mediapilot</h1>
+  <div class="page">
+    <div class="card">
+      <h1>mediapilot — beta</h1>
 
-    <input id="listName" placeholder="name your list" />
-    <input id="itemInput" placeholder="add anything" />
-    <button onclick="addItem()">submit</button>
+      <!-- LIST UI -->
+      <div style="margin-bottom:14px">
+        <label class="small">List name</label>
+        <input id="listName" placeholder="e.g. holiday movies" />
+        <label class="small">Add item</label>
+        <div class="row">
+          <input id="itemInput" placeholder="type movie, song, artist..." />
+          <button onclick="addItem()">Add</button>
+        </div>
+        <ul id="list"></ul>
+        <div class="row">
+          <button onclick="exportList()">Export JSON</button>
+          <button onclick="document.getElementById('fileInput').click()">Import JSON</button>
+          <input id="fileInput" type="file" accept="application/json" style="display:none" onchange="importList()" />
+        </div>
+      </div>
 
-    <ul id="list"></ul>
+      <hr />
 
-    <button onclick="exportList()">export json</button>
+      <!-- CONVERT UI -->
+      <div>
+        <h2 style="margin-top:0">Convert Media</h2>
+        <label class="small">Primary file (video/image/audio) — for music-video choose image+audio below</label>
+        <input id="mediaConvertInput" type="file" />
 
-    <input type="file" id="fileInput" accept="application/json" style="display:none;" onchange="importList()" />
-    <button onclick="document.getElementById('fileInput').click()">import json</button>
+        <label class="small">Action</label>
+        <select id="formatSelect">
+          <option value="mp4">Convert → MP4</option>
+          <option value="webm">Convert → WEBM</option>
+          <option value="gif">Convert → GIF</option>
+          <option value="mp3">Convert → MP3 (audio)</option>
+          <option value="wav">Convert → WAV (audio)</option>
+          <option value="video_from_image">Image → 5s MP4</option>
+          <option value="audio_only">Video → MP3 (audio only)</option>
+          <option value="trim">Trim video</option>
+          <option value="music_video">Music video (image + audio → MP4)</option>
+        </select>
 
-    <hr style="margin:20px 0; border-color:#333;" />
+        <div id="trimControls" style="display:none">
+          <div class="row">
+            <input id="trimStart" placeholder="start (sec)" />
+            <input id="trimEnd" placeholder="end (sec)" />
+          </div>
+        </div>
 
-    <h2>Convert Media</h2>
-    <input type="file" id="mediaConvertInput" />
+        <div id="musicVideoControls" style="display:none">
+          <label class="small">Music video image</label>
+          <input id="mvImage" type="file" accept="image/*" />
+          <label class="small">Music video audio</label>
+          <input id="mvAudio" type="file" accept="audio/*" />
+        </div>
 
-    <select id="formatSelect">
-      <option value="mp4">Video: MP4</option>
-      <option value="webm">Video: WEBM</option>
-      <option value="gif">GIF</option>
-      <option value="png">Image: PNG</option>
-      <option value="mp3">Audio: MP3</option>
-      <option value="wav">Audio: WAV</option>
-      <option value="video_from_image">Image → Video (MP4)</option>
-      <option value="audio_only">Video → Audio (MP3)</option>
-      <option value="music_video">Music Video: Audio + Image → MP4</option>
-      <option value="trim">Trim Video</option>
-    </select>
+        <div class="row" style="margin-top:10px">
+          <button onclick="convertMedia()">Start</button>
+          <button onclick="cancelOperation()">Cancel</button>
+        </div>
 
-    <div id="trimControls" style="display:none;">
-      <div class="row">
-        <input class="col" id="trimStart" placeholder="start time (sec)" />
-        <input class="col" id="trimEnd" placeholder="end time (sec)" />
+        <label class="small">Progress</label>
+        <progress id="progressBar" max="100" value="0"></progress>
+        <pre id="convertStatus">Status: idle</pre>
+        <div class="footer">Tip: Video conversions in the browser can be slow and resource-heavy. Use short clips for best results.</div>
       </div>
     </div>
-
-    <div id="musicVideoControls" style="display:none;">
-      <input type="file" id="mvImage" accept="image/*" />
-      <input type="file" id="mvAudio" accept="audio/*" />
-    </div>
-
-    <button onclick="convertMedia()">convert</button>
-    <progress id="progressBar" max="100" value="0"></progress>
-    <pre id="convertStatus" style="white-space:pre-wrap"></pre>
   </div>
 
 <script>
-  /* ==============================
-       LIST MANAGEMENT
-  ============================== */
-  let mediaList = [];
-
-  function renderList() {
-    const ul = document.getElementById('list');
-    ul.innerHTML = '';
-    mediaList.forEach((item, index) => {
-      const li = document.createElement('li');
-      const span = document.createElement('span');
-      span.textContent = item;
-      li.appendChild(span);
-
-      li.draggable = true;
-      li.dataset.index = index;
-
-      li.addEventListener('dragstart', () => li.classList.add('dragging'));
-      li.addEventListener('dragend', () => {
-        li.classList.remove('dragging');
-        const newOrder = [...document.querySelectorAll('#list li')].map(li => li.querySelector('span').textContent);
-        mediaList = newOrder;
-      });
-
-      const btn = document.createElement('button');
-      btn.textContent = 'X';
-      btn.className = 'remove';
-      btn.onclick = () => removeItem(index);
-
-      li.appendChild(btn);
-      ul.appendChild(li);
-    });
-  }
-
-  function addItem() {
-    const input = document.getElementById('itemInput');
-    if (input.value.trim() !== '') {
-      mediaList.push(input.value.trim());
-      input.value = '';
-      renderList();
-    }
-  }
-
-  function removeItem(index) {
-    mediaList.splice(index, 1);
-    renderList();
-  }
-
-  function exportList() {
-    const data = { name: document.getElementById('listName').value, items: mediaList };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = 'media-list.json'; a.click(); URL.revokeObjectURL(url);
-  }
-
-  function importList() {
-    const file = document.getElementById('fileInput').files[0]; if (!file) return;
-    const reader = new FileReader();
-    reader.onload = e => {
-      try { const data = JSON.parse(e.target.result); document.getElementById('listName').value = data.name||''; mediaList = data.items||[]; renderList(); }
-      catch { alert('Invalid JSON file'); }
-    };
-    reader.readAsText(file);
-  }
-
-  const ul = document.getElementById('list');
-  ul.addEventListener('dragover', e => {
-    e.preventDefault();
-    const dragging = document.querySelector('.dragging');
-    const after = getDragAfter(ul, e.clientY);
-    if (!dragging) return;
-    if (after == null) ul.appendChild(dragging); else ul.insertBefore(dragging, after);
+/* -----------------------------
+   Helper & List code (unchanged)
+------------------------------*/
+let mediaList = [];
+function renderList(){
+  const ul=document.getElementById('list'); ul.innerHTML='';
+  mediaList.forEach((it,i)=>{
+    const li=document.createElement('li');
+    const span=document.createElement('span'); span.textContent=it; li.appendChild(span);
+    li.draggable=true; li.dataset.index=i;
+    li.addEventListener('dragstart',()=>li.classList.add('dragging'));
+    li.addEventListener('dragend',()=>{ li.classList.remove('dragging'); mediaList=[...document.querySelectorAll('#list li')].map(x=>x.querySelector('span').textContent); });
+    const btn=document.createElement('button'); btn.textContent='X'; btn.className='remove'; btn.onclick=()=>{ mediaList.splice(i,1); renderList(); };
+    li.appendChild(btn); ul.appendChild(li);
   });
+}
+function addItem(){ const input=document.getElementById('itemInput'); if(input.value.trim()){ mediaList.push(input.value.trim()); input.value=''; renderList(); }}
+function exportList(){ const data={name:document.getElementById('listName').value, items:mediaList}; const b=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}); const u=URL.createObjectURL(b); const a=document.createElement('a'); a.href=u; a.download='media-list.json'; a.click(); URL.revokeObjectURL(u);} 
+function importList(){ const f=document.getElementById('fileInput').files[0]; if(!f) return; const r=new FileReader(); r.onload=e=>{ try{ const d=JSON.parse(e.target.result); document.getElementById('listName').value=d.name||''; mediaList=d.items||[]; renderList(); }catch{ alert('Invalid JSON'); }}; r.readAsText(f); }
+const ul=document.getElementById('list'); ul.addEventListener('dragover',e=>{ e.preventDefault(); const dragging=document.querySelector('.dragging'); if(!dragging) return; const after=getDragAfter(ul,e.clientY); if(after==null) ul.appendChild(dragging); else ul.insertBefore(dragging,after); });
+function getDragAfter(container,y){ const items=[...container.querySelectorAll('li:not(.dragging)')]; return items.reduce((closest,child)=>{ const box=child.getBoundingClientRect(); const offset=y-box.top-box.height/2; if(offset<0 && offset>closest.offset) return {offset,element:child}; return closest; },{offset:Number.NEGATIVE_INFINITY}).element; }
 
-  function getDragAfter(container, y) {
-    const items = [...container.querySelectorAll('li:not(.dragging)')];
-    return items.reduce((closest, child) => {
-      const box = child.getBoundingClientRect();
-      const offset = y - box.top - box.height/2;
-      if (offset < 0 && offset > closest.offset) return { offset, element: child };
-      return closest;
-    }, { offset: Number.NEGATIVE_INFINITY }).element;
+/* -----------------------------
+   FFmpeg initialization (robust)
+   We'll use the UMD build already loaded in the page.
+------------------------------*/
+let ffmpeg=null; let fetchFileFn=null; let createFFmpegFn=null; let abortFlag=false;
+function wait(ms){return new Promise(r=>setTimeout(r,ms));}
+
+async function ensureFFmpegReady(){
+  if(ffmpeg) return;
+
+  // Wait briefly if the UMD script is still parsing
+  for(let i=0;i<40;i++){ if(window.FFmpeg || window.ffmpeg) break; await wait(100);} 
+
+  if(!(window.FFmpeg || window.ffmpeg)){
+    // try dynamic load as a last resort
+    const s=document.createElement('script'); s.src='https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.6/dist/umd/ffmpeg.js'; document.head.appendChild(s);
+    await new Promise((res,rej)=>{ s.onload=res; s.onerror=()=>rej(new Error('Failed to load ffmpeg UMD')); });
   }
 
+  const root = window.FFmpeg || window.ffmpeg;
+  if(!root) throw new Error('FFmpeg global not available after load');
+  ({createFFmpeg: createFFmpegFn, fetchFile: fetchFileFn} = root);
 
-  /* ==============================
-      UI BEHAVIOR
-  ============================== */
-  document.getElementById('formatSelect').addEventListener('change', () => {
-    const val = document.getElementById('formatSelect').value;
-    document.getElementById('trimControls').style.display = 'none';
-    document.getElementById('musicVideoControls').style.display = 'none';
+  ffmpeg = createFFmpegFn({ log:false, corePath: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.2/dist/ffmpeg-core.js' });
+}
 
-    if (val === 'trim') {
-      document.getElementById('trimControls').style.display = 'block';
+function cancelOperation(){ abortFlag=true; }
+
+/* -----------------------------
+   Main convert logic with modes
+------------------------------*/
+async function convertMedia(){
+  abortFlag=false;
+  const status=document.getElementById('convertStatus'); const bar=document.getElementById('progressBar');
+  const input=document.getElementById('mediaConvertInput'); const file=input.files[0];
+  const mode=document.getElementById('formatSelect').value;
+
+  // music_video mode uses separate inputs
+  if(mode!=='music_video' && !file){ status.textContent='No file selected'; return; }
+
+  status.textContent='Initializing ffmpeg...'; bar.value=0;
+  try{ await ensureFFmpegReady(); }catch(err){ console.error('ffmpeg load error',err); status.textContent='Failed to load ffmpeg - see console'; return; }
+
+  ffmpeg.setProgress(({ratio})=>{ bar.value=Math.min(99, Math.floor(ratio*100)); status.textContent=`Converting: ${Math.floor(ratio*100)}%`; });
+
+  // write files
+  try{
+    if(mode==='music_video'){
+      const mvImg=document.getElementById('mvImage').files[0]; const mvAud=document.getElementById('mvAudio').files[0];
+      if(!mvImg||!mvAud){ status.textContent='Select image and audio for music video'; return; }
+      status.textContent='Writing files...';
+      ffmpeg.FS('writeFile', mvImg.name, await fetchFileFn(mvImg)); ffmpeg.FS('writeFile', mvAud.name, await fetchFileFn(mvAud));
+      const out='musicvideo.mp4';
+      // -shortest ensure video length equals audio length
+      await ffmpeg.run('-loop','1','-i',mvImg.name,'-i',mvAud.name,'-c:v','libx264','-tune','stillimage','-c:a','aac','-b:a','192k','-pix_fmt','yuv420p','-shortest',out);
+      const data=ffmpeg.FS('readFile',out); downloadResult(data, out); status.textContent='Done'; bar.value=100; return;
     }
 
-    if (val === 'music_video') {
-      document.getElementById('musicVideoControls').style.display = 'block';
-    }
-  });
+    // normal modes use single file
+    await ffmpeg.FS('writeFile', file.name, await fetchFileFn(file));
 
-
-  /* ==============================
-      FFMPEG WITH PROGRESS + NEW MODES
-  ============================== */
-  // lazy bindings; we'll populate these after the ffmpeg script is available
-  let createFFmpegFn, fetchFileFn, ffmpeg;
-
-  function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-  async function ensureFFmpegReady() {
-    // If already initialized, nothing to do
-    if (ffmpeg) return;
-
-    // If window.FFmpeg || window.ffmpeg is not yet available, wait briefly for it to load
-    for (let i = 0; i < 50; i++) {
-      if (window.FFmpeg || window.ffmpeg) break;
-      await wait(100);
-    }
-
-    // If still not available, attempt to dynamically load the UMD script
-    if (!(window.FFmpeg || window.ffmpeg)) {
-      const s = document.createElement('script');
-      s.src = 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.6/dist/umd/ffmpeg.js';
-      document.head.appendChild(s);
-      await new Promise((res, rej) => { s.onload = res; s.onerror = () => rej(new Error('Failed to load ffmpeg UMD script')); });
-    }
-
-    // destructure helpers and create ffmpeg instance
-    (({ createFFmpeg: createFFmpegFn, fetchFile: fetchFileFn } = (window.FFmpeg || window.ffmpeg))
-    ffmpeg = createFFmpegFn({ log: true, corePath: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.2/dist/ffmpeg-core.js' });
-  }
-
-  async function convertMedia() {
-    const status = document.getElementById('convertStatus');
-    const bar = document.getElementById('progressBar');
-    const file = document.getElementById('mediaConvertInput').files[0];
-    const format = document.getElementById('formatSelect').value;
-
-    if (!file && format !== 'music_video') {
-      status.textContent = "No file selected.";
-      return;
-    }
-
-    bar.value = 0;
-    status.textContent = "Initializing ffmpeg...";
-
-    try {
-      await ensureFFmpegReady();
-    } catch (err) {
-      console.error('ffmpeg load error', err);
-      status.textContent = 'Failed to load ffmpeg. Check console.';
-      return;
-    }
-
-    ffmpeg.setProgress(({ ratio }) => { bar.value = Math.floor(ratio * 100); });
-
-    status.textContent = "Preparing...";
-
-    // Write the main file if needed
-    if (file) {
-      ffmpeg.FS('writeFile', file.name, await fetchFileFn(file));
-    }
-
-    let out = "output." + (format === 'music_video' ? 'mp4' : format);
-
-    /* ===============================
-        TRIM VIDEO
-    =============================== */
-    if (format === 'trim') {
-      const start = document.getElementById('trimStart').value || '0';
-      const end = document.getElementById('trimEnd').value || null;
-      out = 'trimmed.mp4';
-
-      const args = ['-i', file.name, '-ss', String(start)];
-      if (end) args.push('-to', String(end));
-      args.push('-c', 'copy', out);
+    // trim
+    if(mode==='trim'){
+      const start=document.getElementById('trimStart').value||'0'; const end=document.getElementById('trimEnd').value||null; const out='trimmed.mp4';
+      const args=['-i',file.name,'-ss',String(start)]; if(end) args.push('-to',String(end)); args.push('-c','copy',out);
       await ffmpeg.run(...args);
+      const data=ffmpeg.FS('readFile',out); downloadResult(data,out); status.textContent='Done'; bar.value=100; return;
     }
 
-    /* ===============================
-        MUSIC VIDEO (IMAGE + AUDIO)
-    =============================== */
-    else if (format === 'music_video') {
-      const mvImg = document.getElementById('mvImage').files[0];
-      const mvAud = document.getElementById('mvAudio').files[0];
-
-      if (!mvImg || !mvAud) {
-        status.textContent = "Select both an image and audio file.";
-        return;
-      }
-
-      status.textContent = 'Writing files...';
-      ffmpeg.FS('writeFile', mvImg.name, await fetchFileFn(mvImg));
-      ffmpeg.FS('writeFile', mvAud.name, await fetchFileFn(mvAud));
-
-      out = 'musicvideo.mp4';
-
-      // create a video from the still image and mux audio, using -shortest so it ends with the audio
-      await ffmpeg.run(
-        '-loop', '1',
-        '-i', mvImg.name,
-        '-i', mvAud.name,
-        '-c:v', 'libx264',
-        '-tune', 'stillimage',
-        '-c:a', 'aac',
-        '-b:a', '192k',
-        '-pix_fmt', 'yuv420p',
-        '-shortest',
-        out
-      );
+    // image -> short video
+    if(mode==='video_from_image'){
+      const out='out.mp4'; await ffmpeg.run('-loop','1','-i',file.name,'-t','5','-vf','format=yuv420p',out); const data=ffmpeg.FS('readFile',out); downloadResult(data,out); status.textContent='Done'; bar.value=100; return;
     }
 
-    /* ===============================
-        VIDEO → AUDIO
-    =============================== */
-    else if (format === 'audio_only') {
-      out = "output.mp3";
-      await ffmpeg.run('-i', file.name, '-vn', '-acodec', 'mp3', out);
+    // audio only from video
+    if(mode==='audio_only'){
+      const out='out.mp3'; await ffmpeg.run('-i',file.name,'-vn','-acodec','mp3',out); const data=ffmpeg.FS('readFile',out); downloadResult(data,out); status.textContent='Done'; bar.value=100; return;
     }
 
-    /* ===============================
-        IMAGE → VIDEO
-    =============================== */
-    else if (format === 'video_from_image') {
-      out = "output.mp4";
-      await ffmpeg.run(
-        '-loop', '1',
-        '-i', file.name,
-        '-t', '5',
-        '-vf', 'format=yuv420p',
-        out
-      );
-    }
+    // regular conversion (user selected target e.g. mp4, webm, mp3)
+    const outExt=(mode==='mp3'||mode==='wav'||mode==='mp4'||mode==='webm'||mode==='gif')?mode:'out';
+    const outName=`out.${outExt}`;
+    await ffmpeg.run('-i',file.name,outName);
+    const data=ffmpeg.FS('readFile',outName); downloadResult(data,outName); status.textContent='Done'; bar.value=100; return;
 
-    /* ===============================
-        STANDARD FORMAT CONVERSIONS
-    =============================== */
-    else {
-      await ffmpeg.run('-i', file.name, out);
-    }
+  }catch(err){ console.error('conversion failed',err); status.textContent='Conversion failed — check console'; }
+}
 
-    /* ===============================
-        EXPORT RESULT
-    =============================== */
-    try {
-      const data = ffmpeg.FS('readFile', out);
-      const blob = new Blob([data.buffer]);
-      const url = URL.createObjectURL(blob);
+function downloadResult(data, name){ const blob=new Blob([data.buffer]); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=name; a.click(); URL.revokeObjectURL(url); }
 
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = out;
-      a.click();
+// UI toggles
+const formatSelect=document.getElementById('formatSelect'); formatSelect.addEventListener('change',()=>{ const v=formatSelect.value; document.getElementById('trimControls').style.display=v==='trim'?'block':'none'; document.getElementById('musicVideoControls').style.display=v==='music_video'?'block':'none';});
 
-      status.textContent = "Done!";
-      bar.value = 100;
-    } catch (err) {
-      console.error('export failed', err);
-      status.textContent = 'Export failed — check console.';
-    }
-  }
 </script>
 </body>
 </html>
