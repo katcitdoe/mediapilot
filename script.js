@@ -2,38 +2,38 @@
 // UNIVERSAL INITIALIZATION AND PAGE CHECK
 // ====================================================================
 
-// Check for unique elements to determine the page type.
-const hasAudioElements = !!document.getElementById('bitrateInput'); 
-const hasImageElements = !!document.getElementById('qualityInput'); 
-
 document.addEventListener('DOMContentLoaded', async () => {
+    // --- FIX: Element detection must happen inside DOMContentLoaded ---
+    const hasAudioElements = !!document.getElementById('bitrateInput'); 
+    const hasImageElements = !!document.getElementById('qualityInput'); 
+    
+    // Get the status message element early for error reporting
+    const status = document.getElementById('statusMessage');
+
     if (hasAudioElements && !hasImageElements) {
-        // This block runs ONLY if the unique Audio element is present 
-        // AND the unique Image element is NOT present.
+        // Found unique Audio element, proceed with Audio Converter
         console.log("Audio Converter: Initializing FFmpeg logic.");
         await initAudioConverter();
     } 
     
     else if (hasImageElements && !hasAudioElements) {
-        // This block runs ONLY if the unique Image element is present
-        // AND the unique Audio element is NOT present.
+        // Found unique Image element, proceed with Image Converter
         console.log("Image Converter: Initializing Canvas/Blob logic.");
         initImageConverter();
     }
     
     else {
-        // Safety message for pages with no specific converter logic or mixed pages.
-        console.warn("Initialization Warning: Could not determine page type or elements are mixed.");
-        const status = document.getElementById('statusMessage');
+        // No unique element found, or both found (Mixed Error)
+        console.warn("Initialization Warning: Could not determine page type. Check element IDs.");
         if (status) {
-            status.innerHTML = '⚠️ Converter initialization failed (Mixed element error).';
+            status.innerHTML = '⚠️ Converter initialization failed (Mixed or Missing element error).';
+            status.className = 'status-message error';
         }
     }
 });
 
 // ====================================================================
 // IMAGE CONVERTER LOGIC (Canvas API with Blob URL) - Runs on index.html
-// (No changes needed in the function body, as it's now called conditionally)
 // ====================================================================
 
 function initImageConverter() {
@@ -85,7 +85,6 @@ function initImageConverter() {
         // --- PERFORMANCE FIX: Use ArrayBuffer/Blob URL instead of Data URL ---
         const reader = new FileReader();
         reader.onload = (event) => {
-            // Create a temporary Blob from the ArrayBuffer
             const arrayBuffer = event.target.result;
             const blob = new Blob([arrayBuffer], { type: selectedFile.type });
             const imageUrl = URL.createObjectURL(blob);
@@ -93,7 +92,6 @@ function initImageConverter() {
             const img = new Image();
             
             img.onload = () => {
-                // Clean up the temporary URL immediately after loading
                 URL.revokeObjectURL(imageUrl); 
                 
                 try {
@@ -149,13 +147,13 @@ function initImageConverter() {
             };
             
             img.onerror = () => {
-                URL.revokeObjectURL(imageUrl); // Clean up on error too
+                URL.revokeObjectURL(imageUrl);
                 statusMessage.innerHTML = '❌ Error loading the image file.';
                 statusMessage.className = 'status-message error';
                 convertButton.disabled = false;
             };
 
-            img.src = imageUrl; // Load the image from the safe Blob URL
+            img.src = imageUrl;
         };
 
         reader.onerror = (error) => {
@@ -165,15 +163,12 @@ function initImageConverter() {
             convertButton.disabled = false;
         };
 
-        // We read as ArrayBuffer now, which is necessary for Blob URL creation
         reader.readAsArrayBuffer(selectedFile);
-        // --- END PERFORMANCE FIX ---
     }
 }
 
 // ====================================================================
 // AUDIO CONVERTER LOGIC (FFmpeg Wasm) - Runs on audio.html
-// (No changes needed in the function body, as it's now called conditionally)
 // ====================================================================
 
 async function initAudioConverter() {
@@ -191,13 +186,13 @@ async function initAudioConverter() {
         return;
     }
     
-    // 2. FFmpeg Initialization 
+    // 2. FFmpeg Initialization (Ensure FFmpeg script tag is in audio.html head)
     const FFmpegGlobal = FFmpeg; 
     const { createFFmpeg, fetchFile } = FFmpegGlobal;
     
     const ffmpeg = createFFmpeg({ 
         log: true,
-        // *** This path must be correct based on your local files ***
+        // Using the local path for better reliability on GitHub Pages
         corePath: './ffmpeg-core.js' 
     });
 
@@ -209,7 +204,6 @@ async function initAudioConverter() {
         statusMessage.innerHTML = '✅ FFmpeg ready. Select a file.';
         statusMessage.className = 'status-message success';
     } catch (e) {
-        // This catch block handles silent failures during network loading of the Wasm files
         statusMessage.innerHTML = `❌ Failed to load FFmpeg Core. Check console for details.`;
         statusMessage.className = 'status-message error';
         console.error("FFmpeg Load Error:", e);
@@ -298,14 +292,13 @@ async function initAudioConverter() {
             URL.revokeObjectURL(url);
 
             statusMessage.innerHTML = `✅ Processing Complete! **${downloadLink.download}** is downloading.`;
-            statusMessage.className = 'status-message success';
+            statusMessage.className = 'status-message success`;
             
         } catch (e) {
             console.error("FFmpeg Processing Error:", e);
             statusMessage.innerHTML = '❌ Processing failed. Check console for details.';
             statusMessage.className = 'status-message error';
         } finally {
-            // Clean up the virtual file system
             try {
                 ffmpeg.FS('unlink', inputFileName);
             } catch {}
