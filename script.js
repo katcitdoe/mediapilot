@@ -3,7 +3,7 @@
 // ====================================================================
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // --- FIX: Element detection must happen inside DOMContentLoaded ---
+    // FIX: Element detection must happen inside DOMContentLoaded to ensure the HTML is loaded.
     const hasAudioElements = !!document.getElementById('bitrateInput'); 
     const hasImageElements = !!document.getElementById('qualityInput'); 
     
@@ -292,7 +292,8 @@ async function initAudioConverter() {
             URL.revokeObjectURL(url);
 
             statusMessage.innerHTML = `✅ Processing Complete! **${downloadLink.download}** is downloading.`;
-            statusMessage.className = 'status-message success`;
+            // FIX: Changed the backtick (`) to a single quote (')
+            statusMessage.className = 'status-message success'; 
             
         } catch (e) {
             console.error("FFmpeg Processing Error:", e);
