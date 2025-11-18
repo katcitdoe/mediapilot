@@ -46,29 +46,36 @@ document.addEventListener('DOMContentLoaded', () => {
                     // 5. Draw the image onto the canvas
                     ctx.drawImage(img, 0, 0);
 
-                    // 6. Perform the conversion using toBlob()
-                    canvas.toBlob((blob) => {
-                        // Get the original file name without extension
-                        const originalFileName = selectedFile.name.substring(0, selectedFile.name.lastIndexOf('.')) || selectedFile.name;
-                        const newFileName = `${originalFileName}.${targetExtension}`;
-                        
-                        // 7. Trigger the Download
-                        const downloadLink = document.createElement('a');
-                        downloadLink.href = URL.createObjectURL(blob); // Create temporary URL for download
-                        downloadLink.download = newFileName; // Set the download filename
-                        
-                        // Wait briefly before triggering the click to ensure the element is ready
-                        setTimeout(() => {
-                            downloadLink.click();
-                            // Clean up the temporary URL immediately after download is triggered
-                            URL.revokeObjectURL(downloadLink.href);
-                        }, 50);
+// 6. Perform the conversion using toBlob()
+canvas.toBlob((blob) => {
+    // Get the original file name without extension
+    const originalFileName = selectedFile.name.substring(0, selectedFile.name.lastIndexOf('.')) || selectedFile.name;
+    const newFileName = `${originalFileName}.${targetExtension}`;
+    
+    // 7. Trigger the Download (Optimized for reliability)
+    const downloadLink = document.createElement('a');
+    
+    // 7a. Create temporary URL for the Blob data
+    const url = URL.createObjectURL(blob);
+    
+    downloadLink.href = url;
+    downloadLink.download = newFileName; // Set the download filename
+    
+    // 7b. Append the link to the document (briefly) and click it
+    // Appending it makes it detectable by some browsers/environments, 
+    // ensuring the click event is properly registered.
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    
+    // 7c. Clean up: Remove the link and revoke the URL
+    document.body.removeChild(downloadLink);
+    URL.revokeObjectURL(url);
 
-                        // 8. Display Success Message
-                        statusMessage.innerHTML = `✅ Conversion Complete! **${newFileName}** is downloading.`;
-                        statusMessage.style.color = 'green';
-                        
-                    }, targetMimeType, 0.9); // The 0.9 is the JPEG quality parameter (ignored by PNG/WebP)
+    // 8. Display Success Message
+    statusMessage.innerHTML = `✅ Conversion Complete! **${newFileName}** is downloading.`;
+    statusMessage.style.color = 'lightgreen'; // Use a light color for visibility
+    
+}, targetMimeType, 0.9); // The 0.9 is the JPEG quality parameter
 
                 } catch (e) {
                     console.error("Canvas Conversion Error:", e);
