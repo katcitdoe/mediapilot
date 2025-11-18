@@ -186,18 +186,32 @@ async function initAudioConverter() {
         return;
     }
     
-    // 2. FFmpeg Initialization (Ensure FFmpeg script tag is in audio.html head)
-    const FFmpegGlobal = FFmpeg; 
-    const { createFFmpeg, fetchFile } = FFmpegGlobal;
+    // 2. FFmpeg Initialization 
+    // FIX: Check for FFmpeg definition to avoid ReferenceError
+    if (typeof FFmpeg === 'undefined') {
+        statusMessage.innerHTML = `❌ FFmpeg library not found. Ensure the script tag is in audio.html.`;
+        statusMessage.className = 'status-message error';
+        console.error("FFmpeg Library Error: Global 'FFmpeg' object is undefined. Check script tag loading order.");
+        return;
+    }
+    
+    // Destructure directly from the global FFmpeg object
+    const { createFFmpeg, fetchFile } = FFmpeg;
     
     const ffmpeg = createFFmpeg({ 
         log: true,
-        corePath: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.11.1/dist/ffmpeg-core.js' 
+        // Using the local path for better reliability on GitHub Pages
+        corePath: './ffmpeg-core.js' 
     });
 
     // 3. Load FFmpeg Core
     try {
+        convertButton.disabled = true;
+        statusMessage.innerHTML = '⚙️ Loading FFmpeg Core... please wait.';
+        statusMessage.className = 'status-message processing';
+
         await ffmpeg.load();
+        
         convertButton.disabled = false;
         convertButton.textContent = 'Process Audio File';
         statusMessage.innerHTML = '✅ FFmpeg ready. Select a file.';
@@ -291,7 +305,6 @@ async function initAudioConverter() {
             URL.revokeObjectURL(url);
 
             statusMessage.innerHTML = `✅ Processing Complete! **${downloadLink.download}** is downloading.`;
-            // FIX: Changed the backtick (`) to a single quote (')
             statusMessage.className = 'status-message success'; 
             
         } catch (e) {
