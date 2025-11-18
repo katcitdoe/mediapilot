@@ -3,22 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FFmpeg Client-Side Audio Tool</title>
+    <title>mediapilot audio</title>
     
     <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.11.1/dist/ffmpeg-core.js"></script>
 
     <link rel="stylesheet" href="style.css">
-    <script src="script.js"></script>
+    <script src="script.js" defer></script>
 </head>
 <body>
     <div class="page">
         <div class="card">
-            <h1>FFmpeg Audio Tool</h1>
-            <p class="description">Convert, compress, and trim audio files client-side using WebAssembly (FFmpeg).</p>
+            <h1>mediapilot audio</h1>
+            <p class="description">Convert, trim, and compress audio locally (MP3, WAV, OGG, FLAC). No files leave your device.</p>
 
             <div class="row">
                 <div class="col">
-                    <label for="fileInput">Select Audio File (.mp3, .wav, etc.):</label>
+                    <label for="fileInput">Select Audio File:</label>
                     <input type="file" id="fileInput" accept="audio/*">
                 </div>
                 
@@ -33,22 +33,21 @@
                 </div>
             </div>
             
-            <label style="margin-top: 0;">Audio Processing Controls</label>
             <div id="controls-grid">
                 
                 <div class="control-col">
-                    <label for="bitrateInput">Compression (Bitrate - kbps):</label>
-                    <input type="number" id="bitrateInput" placeholder="Default (e.g., 128)" />
+                    <label for="bitrateInput">Compression (bitrate):</label>
+                    <input type="number" id="bitrateInput" placeholder="320kbps" />
                 </div>
 
                 <div class="control-col">
-                    <label for="trimStartInput">Trim Start (seconds, e.g., 5):</label>
-                    <input type="number" id="trimStartInput" placeholder="0" min="0" />
+                    <label for="trimStartInput">Trim Start (seconds):</label>
+                    <input type="number" id="trimStartInput" placeholder="Original Start" min="0" />
                 </div>
 
                 <div class="control-col">
-                    <label for="trimEndInput">Trim End (seconds, e.g., 30):</label>
-                    <input type="number" id="trimEndInput" placeholder="End" min="0" />
+                    <label for="trimEndInput">Trim End (seconds):</label>
+                    <input type="number" id="trimEndInput" placeholder="Original End" min="0" />
                 </div>
             </div>
             
