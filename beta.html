@@ -5,21 +5,67 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>mediapilot</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #000; color: #fff; }
-    h1 { text-align: center; }
-    .container { max-width: 700px; margin: auto; background: #111; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(255,255,255,0.06); }
-    input, button, select { width: 100%; padding: 10px; margin: 8px 0; border-radius: 5px; border: 1px solid #444; font-size: 16px; background: #222; color: #fff; }
-    button { cursor: pointer; background: #007bff; border: none; }
-    button:hover { background: #0056b3; }
-    ul { padding-left: 0; list-style: none; }
-    li { background: #222; padding: 10px; border-radius: 5px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; cursor: grab; }
-    li.dragging { opacity: 0.3; }
-    .remove { background: #ff4d4d; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
-    #convertStatus { font-size: 14px; color: #ddd; }
-    .small { font-size: 13px; color:#aaa; }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #000;
+      color: #fff;
+    }
+    h1 {
+      text-align: center;
+    }
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: #111;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(255,255,255,0.1);
+    }
+    input, button {
+      width: 100%;
+      margin: 8px 0;
+      border-radius: 5px;
+      border: 1px solid #444;
+      font-size: 16px;
+      background: #222;
+      color: #fff;
+    }
+    button {
+      cursor: pointer;
+      background: #007bff;
+      border: none;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    ul {
+      padding-left: 0;
+      list-style: none;
+    }
+    li {
+      background: #222;
+      padding: 10px;
+      border-radius: 5px;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: grab;
+    }
+    li.dragging {
+      opacity: 0.3;
+    }
+    .remove {
+      background: #ff4d4d;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
   </style>
-  <!-- ffmpeg.wasm (core will be fetched from CDN) -->
-  <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd/ffmpeg-core.wasm"></script>
 </head>
 <body>
   <div class="container">
@@ -38,21 +84,18 @@
 
     <hr style="margin:20px 0; border-color:#333;" />
 
-    <h2>Convert Media</h2>
-    <input type="file" id="mediaConvertInput" accept="image/*,video/*" />
+    <input type="file" id="mediaConvertInput" accept="image/*" />
 
-    <label>Convert to format:</label>
+    <label>convert to</label>
     <select id="formatSelect">
-      <option value="jpg">JPG (image)</option>
-      <option value="png">PNG (image)</option>
-      <option value="webp">WEBP (image)</option>
-      <option value="mp4">MP4 (video)</option>
-      <option value="webm">WEBM (video)</option>
+      <option value="jpg">JPG</option>
+      <option value="png">PNG</option>
+      <option value="webp">WEBP</option>
     </select>
 
-    <button onclick="convertMedia()">convert file</button>
+    <button onclick="convertMedia()">submit</button>
     <p id="convertStatus"></p>
-    <p class="small">Note: image conversions use the browser (fast). Video conversions use ffmpeg.wasm and can be large/slow and may not support all codecs in the browser build.</p>
+    <p class="small">im not responsible for whatever the fuck you use this tool for</p>
   </div>
 
   <script>
@@ -141,95 +184,36 @@
       }, { offset: Number.NEGATIVE_INFINITY }).element;
     }
 
-    // --- media conversion ---
-    // We'll convert images using an offscreen canvas (reliable and fast).
-    // For videos, we use ffmpeg.wasm. Note: the ffmpeg core is fetched from CDN and may fail on very strict networks.
-
+    // --- image-only conversion ---
     async function convertMedia() {
       const fileInput = document.getElementById('mediaConvertInput');
       const file = fileInput.files[0];
       const format = document.getElementById('formatSelect').value;
       const status = document.getElementById('convertStatus');
 
-      if (!file) { status.textContent = 'Select a file first.'; return; }
+      if (!file) { status.textContent = 'Select an image first.'; return; }
+      status.textContent = 'Converting image...';
 
-      const isImage = file.type.startsWith('image/');
-      const isVideo = file.type.startsWith('video/');
+      try {
+        const dataUrl = await fileToDataURL(file);
+        const img = await loadImage(dataUrl);
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
 
-      // IMAGE conversion (use canvas)
-      if (isImage && (format === 'jpg' || format === 'png' || format === 'webp')) {
-        status.textContent = 'Converting image in-browser...';
-        try {
-          const dataUrl = await fileToDataURL(file);
-          const img = await loadImage(dataUrl);
-          const canvas = document.createElement('canvas');
-          canvas.width = img.naturalWidth;
-          canvas.height = img.naturalHeight;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0);
-
-          const mime = format === 'jpg' ? 'image/jpeg' : (format === 'png' ? 'image/png' : 'image/webp');
-          canvas.toBlob(blob => {
-            const outName = file.name.replace(/\.[^.]+$/, '') + '.' + format;
-            downloadBlob(blob, outName);
-            status.textContent = 'Done — image downloaded.';
-          }, mime, 0.92);
-        } catch (err) {
-          console.error(err);
-          status.textContent = 'Image conversion failed.';
-        }
-        return;
+        const mime = format === 'jpg' ? 'image/jpeg' : (format === 'png' ? 'image/png' : 'image/webp');
+        canvas.toBlob(blob => {
+          const outName = file.name.replace(/\.[^.]+$/, '') + '.' + format;
+          downloadBlob(blob, outName);
+          status.textContent = 'Done — image downloaded.';
+        }, mime, 0.92);
+      } catch (err) {
+        console.error(err);
+        status.textContent = 'Image conversion failed.';
       }
-
-      // VIDEO conversion (use ffmpeg.wasm) — this can be slow and large
-      if (isVideo && (format === 'mp4' || format === 'webm')) {
-        status.textContent = 'Loading ffmpeg (may take a few seconds)...';
-        const { createFFmpeg, fetchFile } = FFmpeg;
-        // point corePath explicitly to reduce chance of a bad core lookup
-        const ffmpeg = createFFmpeg({ log: true, corePath: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.11.1/dist/ffmpeg-core.js'});
-        try {
-          ffmpeg.setProgress(({ ratio }) => {
-            status.textContent = `Converting... ${Math.round(ratio * 100)}%`;
-          });
-          await ffmpeg.load();
-        } catch (err) {
-          console.error('ffmpeg load failed', err);
-          status.textContent = 'Failed to load ffmpeg — check network or try a different browser.';
-          return;
-        }
-
-        try {
-          const inputName = 'input' + getFileExtension(file.name);
-          const outputName = 'output.' + format;
-          ffmpeg.FS('writeFile', inputName, await fetchFile(file));
-
-          // use a safe conversion command; note: advanced codec options may not be available in wasm build
-          if (format === 'mp4') {
-            // attempt an mp4 copy; fallback to default encode if copy fails
-            try {
-              await ffmpeg.run('-i', inputName, '-c:v', 'libx264', '-preset', 'fast', '-c:a', 'aac', outputName);
-            } catch (e) {
-              console.warn('libx264/aac not available; trying a simpler command', e);
-              await ffmpeg.run('-i', inputName, outputName);
-            }
-          } else {
-            await ffmpeg.run('-i', inputName, outputName);
-          }
-
-          const data = ffmpeg.FS('readFile', outputName);
-          const blob = new Blob([data.buffer], { type: format === 'mp4' ? 'video/mp4' : 'video/webm' });
-          downloadBlob(blob, file.name.replace(/\.[^.]+$/, '') + '.' + format);
-          status.textContent = 'Done — video downloaded.';
-        } catch (err) {
-          console.error(err);
-          status.textContent = 'Video conversion failed (see console).';
-        } finally {
-          try { ffmpeg.FS('unlink', 'input' + getFileExtension(file.name)); } catch(e){}
-        }
-        return;
-      }
-
-      status.textContent = 'Unsupported file type / target format combination.';
+    } / target format combination.';
     }
 
     // helpers
