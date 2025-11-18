@@ -1,3 +1,3 @@
 # mediapilot
-convert, resize, and compress media.  
+convert, resize, and compress images.  
 ## NO BULLSHIT!!!!!
