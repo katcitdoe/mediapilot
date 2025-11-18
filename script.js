@@ -11,8 +11,8 @@ document.addEventListener('DOMContentLoaded', () => {
     convertButton.addEventListener('click', () => {
         
         if (fileInput.files.length === 0) {
-            statusMessage.innerHTML = '⚠️ Please select a file first.';
-            statusMessage.style.color = 'red';
+        statusMessage.innerHTML = '⚠️ Please select a file first.';
+        statusMessage.className = 'status-message error'; // Sets the class
             return;
         }
 
@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (!isConvertibleImage) {
             statusMessage.innerHTML = '⚠️ Selected file is not a supported image format (PNG, JPEG, WebP, GIF, or SVG).';
-            statusMessage.style.color = 'red';
+            statusMessage.className = 'status-message error'; // Sets the class
             return;
         }
         // --- END NEW ---
@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const targetHeight = parseInt(heightInput.value);
 
         statusMessage.innerHTML = `⚙️ Converting **${selectedFile.name}** to **.${targetExtension}**...`;
-        statusMessage.style.color = '#007bff';
+        statusMessage.className = 'status-message processing'; // Sets the class
         convertButton.disabled = true;
         
         const reader = new FileReader();
@@ -86,15 +86,15 @@ document.addEventListener('DOMContentLoaded', () => {
                         document.body.removeChild(downloadLink);
                         URL.revokeObjectURL(url);
 
-                        statusMessage.innerHTML = `✅ Conversion Complete! **${newFileName}** (${Math.round(newWidth)}x${Math.round(newHeight)}) is downloading.`;
-                        statusMessage.style.color = 'lightgreen';
+                        statusMessage.innerHTML = `✅ Conversion Complete! ...`;
+                        statusMessage.className = 'status-message success'; // Sets the class
                         
                     }, targetMimeType, quality); // Pass the user-defined quality
 
                 } catch (e) {
                     console.error("Canvas Conversion Error:", e);
                     statusMessage.innerHTML = '❌ Conversion failed during image processing.';
-                    statusMessage.style.color = 'darkred';
+                    statusMessage.className = 'status-message error'; // Sets the class
                 } finally {
                     convertButton.disabled = false;
                 }
@@ -103,7 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Error handling for image loading
             img.onerror = () => {
                 statusMessage.innerHTML = '❌ Error loading the image file. Ensure file is a valid image or SVG.';
-                statusMessage.style.color = 'darkred';
+                statusMessage.className = 'status-message error'; // Sets the class
                 convertButton.disabled = false;
             };
 
@@ -114,7 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
         reader.onerror = (error) => {
             console.error("FileReader Error:", error);
             statusMessage.innerHTML = '❌ Error reading the file.';
-            statusMessage.style.color = 'darkred';
+            statusMessage.className = 'status-message error'; // Sets the class
             convertButton.disabled = false;
         };
 
