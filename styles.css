@@ -1,0 +1,68 @@
+body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    background-color: #f4f4f9;
+}
+
+.converter-container {
+    background-color: #fff;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    max-width: 400px;
+    width: 90%;
+}
+
+h1 {
+    color: #333;
+    margin-bottom: 5px;
+}
+
+p {
+    color: #666;
+    margin-bottom: 25px;
+}
+
+/* Style for inputs and selects */
+input[type="file"], select, button {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    margin-top: 15px;
+    margin-bottom: 10px;
+    box-sizing: border-box; /* Include padding in the element's total width/height */
+    border-radius: 4px;
+    border: 1px solid #ccc;
+}
+
+select {
+    background-color: #fff;
+}
+
+/* Style for the button */
+#convertButton {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s;
+}
+
+#convertButton:hover {
+    background-color: #0056b3;
+}
+
+/* Status message area */
+.status-message {
+    margin-top: 20px;
+    padding: 10px;
+    min-height: 20px;
+    color: #333;
+    font-weight: bold;
+}
