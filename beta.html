@@ -3,27 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Client-Side File Converter (ZIP)</title>
+    <title>Client-Side Media Converter</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="converter-container">
-        <h1>Client-Side ZIP Converter</h1>
-        <p>This tool compresses your file into a .zip archive locally (client-side).</p>
+        <h1>Client-Side Image Converter</h1>
+        <p>Convert images between common formats (PNG, JPEG, WebP) using the browser's Canvas API.</p>
 
-        <input type="file" id="fileInput" accept="*/*">
+        <input type="file" id="fileInput" accept="image/*">
         
         <label for="formatSelect">Convert to:</label>
-        <select id="formatSelect" disabled>
-            <option value="zip">ZIP (.zip) - Client-Side</option>
+        <select id="formatSelect">
+            <option value="image/png">PNG (.png)</option>
+            <option value="image/jpeg">JPEG (.jpg)</option>
+            <option value="image/webp">WebP (.webp)</option>
         </select>
 
-        <button id="convertButton">Convert to ZIP</button>
+        <button id="convertButton">Convert File</button>
 
         <div id="statusMessage" class="status-message"></div>
     </div>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    
     <script src="script.js"></script>
 </body>
 </html>
