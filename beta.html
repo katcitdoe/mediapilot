@@ -18,7 +18,7 @@
     .col { flex: 1; }
     .remove { background: #ff4d4d; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
   </style>
-  <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.6/dist/ffmpeg.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.6/dist/umd/ffmpeg.min.js"></script>"></script>
 </head>
 <body>
   <div class="container">
@@ -177,7 +177,7 @@
   /* ==============================
       FFMPEG WITH PROGRESS + NEW MODES
   ============================== */
-  const { createFFmpeg, fetchFile } = FFmpeg;
+  const { createFFmpeg, fetchFile } = window.FFmpeg;
   const ffmpeg = createFFmpeg({
     log: true,
     corePath: "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.2/dist/ffmpeg-core.js"
