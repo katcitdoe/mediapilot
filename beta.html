@@ -141,7 +141,7 @@ async function ensureFFmpegReady(){
     await new Promise((res,rej)=>{ s.onload=res; s.onerror=()=>rej(new Error('Failed to load ffmpeg UMD')); });
   }
 
-  const root = window.FFmpeg;
+  const root = window.FFmpeg || FFmpeg;
   if(!root) throw new Error('FFmpeg global not available after load');
   ({createFFmpeg: createFFmpegFn, fetchFile: fetchFileFn} = root);
 
