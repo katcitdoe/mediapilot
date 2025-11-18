@@ -5,26 +5,28 @@ body {
     align-items: center;
     min-height: 100vh;
     margin: 0;
-    background-color: #f4f4f9;
+    /* Dark Mode Colors */
+    background-color: #121212; /* Very dark background */
+    color: #e0e0e0; /* Light text */
 }
 
 .converter-container {
-    background-color: #fff;
+    background-color: #1e1e1e; /* Slightly lighter container */
     padding: 30px;
     border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
     text-align: center;
-    max-width: 400px;
+    max-width: 450px;
     width: 90%;
 }
 
 h1 {
-    color: #333;
+    color: #4CAF50; /* Accent color for heading */
     margin-bottom: 5px;
 }
 
 p {
-    color: #666;
+    color: #bbbbbb;
     margin-bottom: 25px;
 }
 
@@ -32,30 +34,35 @@ p {
 input[type="file"], select, button {
     display: block;
     width: 100%;
-    padding: 10px;
+    padding: 12px;
     margin-top: 15px;
     margin-bottom: 10px;
-    box-sizing: border-box; /* Include padding in the element's total width/height */
+    box-sizing: border-box;
     border-radius: 4px;
-    border: 1px solid #ccc;
+    border: 1px solid #333; /* Darker border */
+    background-color: #2a2a2a; /* Input background */
+    color: #e0e0e0; /* Input text color */
 }
 
-select {
-    background-color: #fff;
+/* Ensure selected options text is visible */
+select option {
+    background-color: #2a2a2a;
+    color: #e0e0e0;
 }
 
 /* Style for the button */
 #convertButton {
-    background-color: #007bff;
+    background-color: #4CAF50; /* Green accent */
     color: white;
     border: none;
     cursor: pointer;
     font-size: 16px;
+    font-weight: bold;
     transition: background-color 0.3s;
 }
 
 #convertButton:hover {
-    background-color: #0056b3;
+    background-color: #43A047;
 }
 
 /* Status message area */
@@ -63,6 +70,6 @@ select {
     margin-top: 20px;
     padding: 10px;
     min-height: 20px;
-    color: #333;
+    color: #e0e0e0;
     font-weight: bold;
 }
