@@ -133,15 +133,15 @@ async function ensureFFmpegReady(){
   if(ffmpeg) return;
 
   // Wait briefly if the UMD script is still parsing
-  for(let i=0;i<40;i++){ if(window.FFmpeg || window.ffmpeg) break; await wait(100);} 
+  for(let i=0;i<40;i++){ if(window.FFmpeg) break; await wait(100);} 
 
-  if(!(window.FFmpeg || window.ffmpeg)){
+  if(!(window.FFmpeg)){
     // try dynamic load as a last resort
     const s=document.createElement('script'); s.src='https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.6/dist/umd/ffmpeg.js'; document.head.appendChild(s);
     await new Promise((res,rej)=>{ s.onload=res; s.onerror=()=>rej(new Error('Failed to load ffmpeg UMD')); });
   }
 
-  const root = window.FFmpeg || window.ffmpeg;
+  const root = window.FFmpeg;
   if(!root) throw new Error('FFmpeg global not available after load');
   ({createFFmpeg: createFFmpegFn, fetchFile: fetchFileFn} = root);
 
