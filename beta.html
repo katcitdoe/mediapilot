@@ -131,22 +131,15 @@ function wait(ms){return new Promise(r=>setTimeout(r,ms));}
 
 async function ensureFFmpegReady(){
   if(ffmpeg) return;
-
-  // Wait briefly if the UMD script is still parsing
   for(let i=0;i<40;i++){ if(window.FFmpeg) break; await wait(100);} 
-
   if(!window.FFmpeg){ throw new Error('FFmpeg global not available after load'); }
-
   const root = window.FFmpeg;
   ({createFFmpeg: createFFmpegFn, fetchFile: fetchFileFn} = root);
-
-  ffmpeg = createFFmpegFn({ log:false, corePath: 'https://unpkg.com/@ffmpeg/core@0.10.1/dist/ffmpeg-core.js' });');
-  ({createFFmpeg: createFFmpegFn, fetchFile: fetchFileFn} = root);
-
-  ffmpeg = createFFmpegFn({ log:false, corePath: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.2/dist/ffmpeg-core.js' });
+  ffmpeg = createFFmpegFn({ log:false, corePath: 'https://unpkg.com/@ffmpeg/core@0.10.1/dist/ffmpeg-core.js' });
 }
 
 function cancelOperation(){ abortFlag=true; }
+(){ abortFlag=true; }
 
 /* -----------------------------
    Main convert logic with modes
